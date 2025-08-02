@@ -97,10 +97,9 @@ func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) 
 	}
 
 	updatedExerciseList := make([]services.Exercise, 0)
-	for i, e := range exerciseList {
+	for _, e := range exerciseList {
 		exercise := services.ConvertDBexerciseToExercise(e)
 		updatedExerciseList = append(updatedExerciseList, exercise)
-		fmt.Println(i, e.ID)
 	}
 
 	eh.writeJSONResponse(w, updatedExerciseList, 200)
