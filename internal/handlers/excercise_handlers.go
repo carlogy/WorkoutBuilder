@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -31,15 +32,17 @@ func (eh *ExerciseHandler) writeJSONResponse(w http.ResponseWriter, data interfa
 	dat, err := json.Marshal(data)
 
 	if err != nil {
-		w.WriteHeader(500)
+		http.Error(w, "Error serializing response", 500)
 		fmt.Printf("Error marshalling db response: %v", err)
 		return
 	}
-
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	w.Write(dat)
-
+	_, err = w.Write(dat)
+	if err != nil {
+		log.Printf("Error writing response: %v\n", err)
+		return
+	}
 }
 
 func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request) {
@@ -89,8 +92,7 @@ func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) 
 
 	exerciseList, err := eh.db.GetExercises(r.Context())
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("Error getting exercises"))
+		http.Error(w, "Error: getting exercises", 500)
 		fmt.Printf("Error querying for exercises: %v", err)
 		return
 
@@ -110,24 +112,22 @@ func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Reques
 
 	id := r.PathValue("id")
 	if id == "" {
-		w.WriteHeader(500)
-		w.Write([]byte("Error getting  path value"))
+
+		http.Error(w, "Error: getting path value", 500)
 		fmt.Printf("Id string received:\t%v", id)
 		return
 	}
 
 	uuid, err := services.ConvertStringToUUID(id)
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("Invalid id passed"))
+		http.Error(w, "Invalid id passed", 500)
 		fmt.Println("Error converting pathVal to UUID", err)
+		return
 	}
 
 	dbEx, err := eh.db.GetExerciseById(r.Context(), uuid)
 	if err != nil {
-		w.WriteHeader(500)
-
-		w.Write([]byte("Error: Exercise does not exist"))
+		http.Error(w, "Error: Exercise does not exist", 500)
 		fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
 		return
 	}
@@ -140,22 +140,23 @@ func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Reques
 func (eh *ExerciseHandler) DeleteExerciseByID(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	if id == "" {
-		w.WriteHeader(500)
-		w.Write([]byte("Must provide exercise Id to delete"))
+		http.Error(w, "Must provide exercise Id to delete", 500)
+		fmt.Println("Invalid id passed:\t", id)
+		return
 	}
 
 	uuid, err := services.ConvertStringToUUID(id)
 	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("Invalid id passed"))
+		http.Error(w, "Invalid id passed", 500)
 		fmt.Println("Error converting pathVal to UUID", err)
+		return
 	}
 
 	deletedEx, err := eh.db.DeleteExerciseById(r.Context(), uuid)
 	if err != nil {
-		w.WriteHeader(404)
-		w.Write([]byte("Exercise not found"))
+		http.Error(w, "Exercise not found", 404)
 		fmt.Printf("Experienced err while deleting exercise:\t%v\n", err)
+		return
 	}
 
 	ex := services.ConvertDBexerciseToExercise(deletedEx)

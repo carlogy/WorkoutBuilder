@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/carlogy/WorkoutBuilder/internal/database"
 
@@ -39,8 +40,12 @@ func NewServer() *http.Server {
 	}
 
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", NewServer.port),
-		Handler: NewServer.RegisterRoutes(),
+		Addr:              fmt.Sprintf(":%d", NewServer.port),
+		Handler:           NewServer.RegisterRoutes(),
+		ReadTimeout:       5 * time.Second,
+		ReadHeaderTimeout: 3 * time.Second,
+		WriteTimeout:      5 * time.Second,
+		IdleTimeout:       30 * time.Minute,
 	}
 
 	return server

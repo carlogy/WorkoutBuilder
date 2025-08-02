@@ -10,11 +10,6 @@ func NoneNullToNullString(s string) sql.NullString {
 	return nullString
 }
 
-func NoneNilIntToNullInt(i int) sql.NullInt32 {
-	nullInt := sql.NullInt32{Int32: int32(i), Valid: true}
-	return nullInt
-}
-
 func NullStringToString(s sql.NullString) *string {
 
 	if s.Valid {
