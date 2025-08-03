@@ -79,14 +79,14 @@ func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Reques
 
 	dbUser, err := uh.db.GetUserByEmail(r.Context(), ea.Email)
 	if err != nil {
-		http.Error(w, "Unauthorized", 401)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Printf("Error querying user from db by email:\t%v\n", err.Error())
 		return
 	}
 
 	err = auth.CheckPasswordHash(ea.Password, dbUser.Password)
 	if err != nil {
-		http.Error(w, "Unauthorized", 401)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Printf("Error comparing pw to stored hash:\t%v\n", err.Error())
 		return
 	}
