@@ -12,10 +12,12 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.Handle("/", http.FileServer(http.Dir("public")))
 
 	eh := handlers.NewExerciseHandler(s.db)
+	uh := handlers.NewUserHandler(s.db)
 	mux.HandleFunc("GET /api/exercises", eh.GetExercises)
 	mux.HandleFunc("GET /api/exercises/{id}", eh.GetExerciseById)
 	mux.HandleFunc("DELETE /api/exercises/{id}", eh.DeleteExerciseByID)
 	mux.HandleFunc("POST /api/exercises", eh.CreateExercise)
 
+	mux.HandleFunc("POST /api/users", uh.CreateUser)
 	return mux
 }

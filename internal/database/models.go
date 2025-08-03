@@ -22,3 +22,13 @@ type Exercise struct {
 	CreatedAt             sql.NullTime
 	ModifiedAt            sql.NullTime
 }
+
+type User struct {
+	ID         uuid.UUID
+	FirstName  sql.NullString
+	LastName   sql.NullString
+	Email      string
+	Password   string
+	CreatedAt  sql.NullTime
+	ModifiedAt sql.NullTime
+}

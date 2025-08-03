@@ -1,4 +1,5 @@
-workoutbuilder.log
+
 .env
 tmp/
 Logs/
+.testExercises.json
