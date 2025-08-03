@@ -10,3 +10,12 @@ VALUES(
     NOW()
 )
 RETURNING id, first_name, last_name, email, created_at, modified_at;
+
+
+-- name: GetUserByEmail :one
+SELECT
+   *
+FROM
+    users u
+WHERE
+    u.email = $1;

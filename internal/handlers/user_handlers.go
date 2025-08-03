@@ -20,14 +20,11 @@ func NewUserHandler(db *database.Queries) UserHandler {
 }
 
 func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
-
 	type jsonUser struct {
 		FirstName *string `json:"firstName"`
 		LastName  *string `json:"lastName"`
 		Email     string  `json:"email"`
 		Password  string  `json:"password"`
-		// CreatedAt  *time.Time `json:"createdAt"`
-		// ModifiedAt *time.Time `json:"modifiedAt"`
 	}
 
 	body := jsonUser{}
@@ -62,5 +59,39 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	u := services.ConvertDBUserToUser(createdUser)
 
 	writeJSONResponse(w, u, 200)
+}
 
+func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Request) {
+
+	type emailAuthentication struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	ea := emailAuthentication{}
+	decoder := json.NewDecoder(r.Body)
+	err := decoder.Decode(&ea)
+	if err != nil {
+		http.Error(w, "Error deserializing request body", 500)
+		fmt.Printf("Error deserializing request body:\t%v\n", err.Error())
+		return
+	}
+
+	dbUser, err := uh.db.GetUserByEmail(r.Context(), ea.Email)
+	if err != nil {
+		http.Error(w, "Unauthorized", 401)
+		fmt.Printf("Error querying user from db by email:\t%v\n", err.Error())
+		return
+	}
+
+	err = auth.CheckPasswordHash(ea.Password, dbUser.Password)
+	if err != nil {
+		http.Error(w, "Unauthorized", 401)
+		fmt.Printf("Error comparing pw to stored hash:\t%v\n", err.Error())
+		return
+	}
+
+	u := services.ConvertFullDBUserToUser(dbUser)
+
+	writeJSONResponse(w, u, 200)
 }

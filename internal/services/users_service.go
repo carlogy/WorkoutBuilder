@@ -27,3 +27,16 @@ func ConvertDBUserToUser(u database.CreateUserRow) User {
 	}
 	return user
 }
+
+func ConvertFullDBUserToUser(u database.User) User {
+
+	user := User{
+		ID:         u.ID,
+		FirstName:  NullStringToString(u.FirstName),
+		LastName:   NullStringToString(u.LastName),
+		Email:      u.Email,
+		CreatedAt:  NullTimeToTime(u.CreatedAt),
+		ModifiedAt: NullTimeToTime(u.ModifiedAt),
+	}
+	return user
+}

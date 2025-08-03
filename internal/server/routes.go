@@ -19,5 +19,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("POST /api/exercises", eh.CreateExercise)
 
 	mux.HandleFunc("POST /api/users", uh.CreateUser)
+
+	mux.HandleFunc("POST /api/login", uh.AuthenticateByEmail)
 	return mux
 }
