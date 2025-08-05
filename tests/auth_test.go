@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
+	"github.com/google/uuid"
 )
 
 const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()<>,.;/?=+-_"
@@ -142,5 +143,51 @@ func TestCompareNonMatcthingPWHashPW(t *testing.T) {
 
 	if err == nil {
 		t.Errorf("PW don't match, PW: %s\tHashPW: %s\n", pw, hashPW)
+	}
+}
+
+func TestJWTs(t *testing.T) {
+	userID := uuid.New()
+	validToken, _ := auth.MakeJWT(userID, "SecretString", time.Hour)
+
+	testCases := []struct {
+		name           string
+		tokenString    string
+		tokenSecret    string
+		expectedUserId uuid.UUID
+		wantErr        bool
+	}{
+		{
+			name:           "Valid Token",
+			tokenString:    validToken,
+			tokenSecret:    "SecretString",
+			expectedUserId: userID,
+			wantErr:        false,
+		},
+		{
+			name:           "Invalid Token",
+			tokenString:    "Invalid Token String",
+			tokenSecret:    "SecretString",
+			expectedUserId: uuid.Nil,
+			wantErr:        true,
+		},
+		{
+			name:           "Wront Secret",
+			tokenString:    validToken,
+			tokenSecret:    "NotSecretString",
+			expectedUserId: uuid.Nil,
+			wantErr:        true,
+		},
+	}
+
+	for _, tc := range testCases {
+		gotUserId, err := auth.ValidateJWT(tc.tokenString, tc.tokenSecret)
+		if (err != nil) != tc.wantErr {
+			t.Errorf("ValidateJWT() Error:\t%v\tWanted Err:\t%v\n", err, tc.wantErr)
+		}
+
+		if gotUserId != tc.expectedUserId {
+			t.Errorf("ValidateJWT() Got UserID:\t%v\tExpected UserID:\t%v\n", gotUserId, tc.expectedUserId)
+		}
 	}
 }

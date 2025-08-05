@@ -1,13 +1,13 @@
 services:
-  psql_wp:
-    image: postgres:latest
+  psql_wb:
+    image: postgres:17.5-alpine3.22
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${WORKOUTBUILDER_DB_DATABASE}
       POSTGRES_USER: ${WORKOUTBUILDER_DB_USERNAME}
       POSTGRES_PASSWORD: ${WORKOUTBUILDER_DB_PASSWORD}
+      POSTGRES_DB: ${WORKOUTBUILDER_DB_DATABASE}
     ports:
-      - "${WORKOUTBUILDER_DB_PORT}"
+      - ${DEVICE_PORT}:${WORKOUTBUILDER_DB_PORT}
     volumes:
       - psql_volume_wb:/var/lib/postgresql/data
 
