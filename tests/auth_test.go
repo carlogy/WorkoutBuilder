@@ -2,6 +2,7 @@ package auth
 
 import (
 	"math/rand"
+	"net/http"
 	"testing"
 	"time"
 
@@ -188,6 +189,61 @@ func TestJWTs(t *testing.T) {
 
 		if gotUserId != tc.expectedUserId {
 			t.Errorf("ValidateJWT() Got UserID:\t%v\tExpected UserID:\t%v\n", gotUserId, tc.expectedUserId)
+		}
+	}
+}
+
+func TestGetBearerToken(t *testing.T) {
+	headersWithAuth := http.Header{}
+	headersWithAuth.Set("Authorization", "TokenString123")
+
+	headersWithoutAuth := http.Header{}
+	headersWithoutAuth.Set("Content-Type", "application/json")
+
+	multipleItemHeader := http.Header{}
+	multipleItemHeader.Set("Content-Type", "application/json")
+	multipleItemHeader.Set("Connection", "Keep-Alive")
+	multipleItemHeader.Set("Content-Encoding", "gzip")
+	multipleItemHeader.Set("Authorization", "TokenString123")
+
+	testCases := []struct {
+		name          string
+		header        http.Header
+		expectedToken string
+		wantErr       bool
+	}{
+		{
+			name:          "Header has Authorization header",
+			header:        headersWithAuth,
+			expectedToken: "TokenString123",
+			wantErr:       false,
+		},
+		{
+			name:          "Header without Authorization header",
+			header:        headersWithoutAuth,
+			expectedToken: "",
+			wantErr:       true,
+		},
+		{
+			name:          "Empty Header map",
+			header:        http.Header{},
+			expectedToken: "",
+			wantErr:       true,
+		},
+		{
+			name:          "Header with multiple vals",
+			header:        multipleItemHeader,
+			expectedToken: "TokenString123",
+			wantErr:       false,
+		},
+	}
+
+	for _, tc := range testCases {
+
+		gotToken, err := auth.GetBearerToken(tc.header)
+
+		if (err != nil) != tc.wantErr {
+			t.Errorf("Test:\t%s\tGot token:\t%s\tWanted Token:\t%v\tGot Error: %s\n", tc.name, gotToken, tc.expectedToken, err.Error())
 		}
 	}
 }
