@@ -12,6 +12,7 @@ type User struct {
 	FirstName  *string    `json:"firstName"`
 	LastName   *string    `json:"lastName"`
 	Email      string     `json:"email"`
+	Token      *string    `json:"token"`
 	CreatedAt  *time.Time `json:"createdAt"`
 	ModifiedAt *time.Time `json:"modifiedAt"`
 }
@@ -28,7 +29,7 @@ func ConvertDBUserToUser(u database.CreateUserRow) User {
 	return user
 }
 
-func ConvertFullDBUserToUser(u database.User) User {
+func ConvertFullDBUserToUser(u database.User, t *string) User {
 
 	user := User{
 		ID:         u.ID,
@@ -37,6 +38,7 @@ func ConvertFullDBUserToUser(u database.User) User {
 		Email:      u.Email,
 		CreatedAt:  NullTimeToTime(u.CreatedAt),
 		ModifiedAt: NullTimeToTime(u.ModifiedAt),
+		Token:      t,
 	}
 	return user
 }

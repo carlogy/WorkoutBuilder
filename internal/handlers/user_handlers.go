@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
 	"github.com/carlogy/WorkoutBuilder/internal/database"
@@ -11,11 +12,11 @@ import (
 )
 
 type UserHandler struct {
-	db *database.Queries
+	conf ApiConfig
 }
 
-func NewUserHandler(db *database.Queries) UserHandler {
-	uh := UserHandler{db: db}
+func NewUserHandler(c *ApiConfig) UserHandler {
+	uh := UserHandler{conf: *c}
 	return uh
 }
 
@@ -43,7 +44,7 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdUser, err := uh.db.CreateUser(r.Context(), database.CreateUserParams{
+	createdUser, err := uh.conf.db.CreateUser(r.Context(), database.CreateUserParams{
 		FirstName: services.NoneNullToNullString(*body.FirstName),
 		LastName:  services.NoneNullToNullString(*body.LastName),
 		Email:     body.Email,
@@ -64,8 +65,9 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Request) {
 
 	type emailAuthentication struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email            string `json:"email"`
+		Password         string `json:"password"`
+		ExpiresInSeconds *int   `json:"expires_in_seconds"`
 	}
 
 	ea := emailAuthentication{}
@@ -77,7 +79,7 @@ func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dbUser, err := uh.db.GetUserByEmail(r.Context(), ea.Email)
+	dbUser, err := uh.conf.db.GetUserByEmail(r.Context(), ea.Email)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Printf("Error querying user from db by email:\t%v\n", err.Error())
@@ -91,7 +93,24 @@ func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	u := services.ConvertFullDBUserToUser(dbUser)
+	// To do Make JWT and return
+
+	if ea.ExpiresInSeconds == nil {
+		token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(time.Hour))
+		if err != nil {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			fmt.Printf("Eror making JWT: %v", err)
+		}
+		u := services.ConvertFullDBUserToUser(dbUser, &token)
+		writeJSONResponse(w, u, http.StatusOK)
+	}
+
+	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(*ea.ExpiresInSeconds))
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		fmt.Printf("Eror making JWT: %v", err)
+	}
+	u := services.ConvertFullDBUserToUser(dbUser, &token)
 
 	writeJSONResponse(w, u, 200)
 }

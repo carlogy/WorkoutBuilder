@@ -8,15 +8,16 @@ import (
 	"strconv"
 
 	"github.com/carlogy/WorkoutBuilder/internal/database"
+
 	services "github.com/carlogy/WorkoutBuilder/internal/services"
 )
 
 type ExerciseHandler struct {
-	db *database.Queries
+	conf *ApiConfig
 }
 
-func NewExerciseHandler(db *database.Queries) ExerciseHandler {
-	eh := ExerciseHandler{db: db}
+func NewExerciseHandler(c *ApiConfig) ExerciseHandler {
+	eh := ExerciseHandler{conf: c}
 	return eh
 }
 
@@ -67,7 +68,7 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	ex, err := eh.db.CreateExercise(r.Context(), database.CreateExerciseParams{
+	ex, err := eh.conf.db.CreateExercise(r.Context(), database.CreateExerciseParams{
 		Name:                  body.Name,
 		ExerciseType:          eh.GetExerciseType(services.ExerciseType(body.ExerciseType)),
 		Equipment:             body.Equipment,
@@ -90,7 +91,7 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 
 func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) {
 
-	exerciseList, err := eh.db.GetExercises(r.Context())
+	exerciseList, err := eh.conf.db.GetExercises(r.Context())
 	if err != nil {
 		http.Error(w, "Error: getting exercises", 500)
 		fmt.Printf("Error querying for exercises: %v", err)
@@ -125,7 +126,7 @@ func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	dbEx, err := eh.db.GetExerciseById(r.Context(), uuid)
+	dbEx, err := eh.conf.db.GetExerciseById(r.Context(), uuid)
 	if err != nil {
 		http.Error(w, "Error: Exercise does not exist", 500)
 		fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
@@ -152,7 +153,7 @@ func (eh *ExerciseHandler) DeleteExerciseByID(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	deletedEx, err := eh.db.DeleteExerciseById(r.Context(), uuid)
+	deletedEx, err := eh.conf.db.DeleteExerciseById(r.Context(), uuid)
 	if err != nil {
 		http.Error(w, "Exercise not found", 404)
 		fmt.Printf("Experienced err while deleting exercise:\t%v\n", err)

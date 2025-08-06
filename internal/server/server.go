@@ -10,18 +10,20 @@ import (
 	"time"
 
 	"github.com/carlogy/WorkoutBuilder/internal/database"
+	"github.com/carlogy/WorkoutBuilder/internal/handlers"
 
 	_ "github.com/lib/pq"
 )
 
 type Server struct {
 	port int
-	db   *database.Queries
+	*handlers.ApiConfig
 }
 
 func NewServer() *http.Server {
 
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	secret := os.Getenv("JWTSECRET")
 	connStr := os.Getenv("WORKOUTBUILDER_DB_URL")
 	if connStr == "" {
 		log.Fatal("DB URL must be set")
@@ -34,9 +36,11 @@ func NewServer() *http.Server {
 
 	dbQueries := database.New(dbConn)
 
+	apiConfig := handlers.NewApiConfig(dbQueries, secret)
+
 	NewServer := &Server{
-		port: port,
-		db:   dbQueries,
+		port:      port,
+		ApiConfig: apiConfig,
 	}
 
 	server := &http.Server{

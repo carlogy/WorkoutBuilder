@@ -11,8 +11,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.Handle("/", http.FileServer(http.Dir("public")))
 
-	eh := handlers.NewExerciseHandler(s.db)
-	uh := handlers.NewUserHandler(s.db)
+	eh := handlers.NewExerciseHandler(s.ApiConfig)
+	uh := handlers.NewUserHandler(s.ApiConfig)
 	mux.HandleFunc("GET /api/exercises", eh.GetExercises)
 	mux.HandleFunc("GET /api/exercises/{id}", eh.GetExerciseById)
 	mux.HandleFunc("DELETE /api/exercises/{id}", eh.DeleteExerciseByID)
