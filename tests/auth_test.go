@@ -195,7 +195,7 @@ func TestJWTs(t *testing.T) {
 
 func TestGetBearerToken(t *testing.T) {
 	headersWithAuth := http.Header{}
-	headersWithAuth.Set("Authorization", "TokenString123")
+	headersWithAuth.Set("Authorization", "Bearer TokenString123")
 
 	headersWithoutAuth := http.Header{}
 	headersWithoutAuth.Set("Content-Type", "application/json")
@@ -204,7 +204,10 @@ func TestGetBearerToken(t *testing.T) {
 	multipleItemHeader.Set("Content-Type", "application/json")
 	multipleItemHeader.Set("Connection", "Keep-Alive")
 	multipleItemHeader.Set("Content-Encoding", "gzip")
-	multipleItemHeader.Set("Authorization", "TokenString123")
+	multipleItemHeader.Set("Authorization", "Bearer TokenString123")
+
+	badAuthHeaderfmt := http.Header{}
+	badAuthHeaderfmt.Add("Authorization", "Toke1234")
 
 	testCases := []struct {
 		name          string
@@ -235,6 +238,12 @@ func TestGetBearerToken(t *testing.T) {
 			header:        multipleItemHeader,
 			expectedToken: "TokenString123",
 			wantErr:       false,
+		},
+		{
+			name:          "Incorrectly formatted header",
+			header:        badAuthHeaderfmt,
+			expectedToken: "",
+			wantErr:       true,
 		},
 	}
 

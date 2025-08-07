@@ -102,6 +102,10 @@ func GetBearerToken(headers http.Header) (string, error) {
 	}
 
 	splitAuthSlice := strings.Split(rawAuthString, "Bearer ")
+	if len(splitAuthSlice) != 2 {
+		return "", errors.New("badly formed authorization header")
+	}
+
 	trimmedToken := strings.TrimSpace(splitAuthSlice[1])
 
 	return trimmedToken, nil
