@@ -37,6 +37,7 @@ func (eh *ExerciseHandler) writeJSONResponse(w http.ResponseWriter, data interfa
 		fmt.Printf("Error marshalling db response: %v", err)
 		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
 	_, err = w.Write(dat)
