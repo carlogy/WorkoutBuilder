@@ -3,3 +3,4 @@
 tmp/
 Logs/
 .testExercises.json
+tests/hurl_tests
