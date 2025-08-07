@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -18,6 +19,26 @@ type UserHandler struct {
 func NewUserHandler(c *ApiConfig) UserHandler {
 	uh := UserHandler{conf: *c}
 	return uh
+}
+
+func (uh *UserHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
+	w.Header().Set("Conten-Type", "application/json")
+
+	dat, err := json.Marshal(data)
+
+	if err != nil {
+		http.Error(w, "Error serializing response", 500)
+		fmt.Printf("Error marshalling db response: %v", err)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	_, err = w.Write(dat)
+	if err != nil {
+		log.Printf("Error writing response: %v\n", err)
+		return
+	}
 }
 
 func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +80,7 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	u := services.ConvertDBUserToUser(createdUser)
 
-	writeJSONResponse(w, u, 200)
+	uh.writeJSONResponse(w, u, 200)
 }
 
 func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Request) {
@@ -93,24 +114,24 @@ func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// To do Make JWT and return
-
-	if ea.ExpiresInSeconds == nil {
-		token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(time.Hour))
+	if ea.ExpiresInSeconds != nil {
+		token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(*ea.ExpiresInSeconds*int(time.Second)))
 		if err != nil {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			fmt.Printf("Eror making JWT: %v", err)
+			return
 		}
 		u := services.ConvertFullDBUserToUser(dbUser, &token)
-		writeJSONResponse(w, u, http.StatusOK)
+		uh.writeJSONResponse(w, u, http.StatusOK)
+		return
 	}
 
-	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(*ea.ExpiresInSeconds))
+	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Hour)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Printf("Eror making JWT: %v", err)
+		return
 	}
 	u := services.ConvertFullDBUserToUser(dbUser, &token)
-
-	writeJSONResponse(w, u, 200)
+	uh.writeJSONResponse(w, u, http.StatusOK)
 }

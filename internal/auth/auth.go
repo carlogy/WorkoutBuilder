@@ -51,7 +51,7 @@ func MakeJWT(userId uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    string(TokenTypeAccess),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(expiresIn)),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn).UTC()),
 		Subject:   userId.String(),
 	})
 
@@ -65,8 +65,10 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&claims,
-		func(key *jwt.Token) (interface{}, error) { return []byte(tokenSecret), nil })
+		func(key *jwt.Token) (interface{}, error) { return []byte(tokenSecret), nil },
+	)
 	if err != nil {
+		fmt.Println(err)
 		return uuid.Nil, err
 	}
 
@@ -99,8 +101,12 @@ func GetBearerToken(headers http.Header) (string, error) {
 		return "", errors.New("authorization header was not provided")
 	}
 
-	splitAuthSlice := strings.Split(rawAuthString, "Bearer")
-	trimmedToken := strings.TrimSpace(splitAuthSlice[0])
+	splitAuthSlice := strings.Split(rawAuthString, "Bearer ")
+	if len(splitAuthSlice) != 2 {
+		return "", errors.New("badly formed authorization header")
+	}
+
+	trimmedToken := strings.TrimSpace(splitAuthSlice[1])
 
 	return trimmedToken, nil
 
