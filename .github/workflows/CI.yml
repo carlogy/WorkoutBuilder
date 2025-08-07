@@ -24,12 +24,6 @@ jobs:
       - name: Install gosec
         run: go install github.com/securego/gosec/v2/cmd/gosec@latest
 
-      - name: Install Hurl
-        run: |
-          VERSION=7.0.0
-          sudo apt-add-repository -y ppa:lepapareil/hurl
-          sudo apt install hurl="${VERSION}"*
-
       - name: Run tests
         run: go test -v ./...
 
