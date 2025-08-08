@@ -1,6 +1,6 @@
 module github.com/carlogy/WorkoutBuilder
 
-go 1.24.6
+go 1.24.5
 
 require (
 	github.com/google/uuid v1.6.0
