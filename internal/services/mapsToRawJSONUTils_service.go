@@ -30,6 +30,18 @@ func ConvertMapToRawJSON[T string | int](mapToConvert map[T]T) pqtype.NullRawMes
 	return NullRawMessage
 }
 
+func ConvertMapsToRawJSON(data any) (pqtype.NullRawMessage, error) {
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return pqtype.NullRawMessage{}, err
+	}
+
+	return pqtype.NullRawMessage{
+		RawMessage: jsonBytes,
+		Valid:      true,
+	}, nil
+}
+
 func ConvertRawJSONTOMap[T string | int](data pqtype.NullRawMessage) map[T]T {
 	if !data.Valid {
 		return nil

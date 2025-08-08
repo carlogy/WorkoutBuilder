@@ -32,3 +32,16 @@ type User struct {
 	CreatedAt  sql.NullTime
 	ModifiedAt sql.NullTime
 }
+
+type UserExercise struct {
+	ID             uuid.UUID
+	Userid         uuid.UUID
+	Exerciseid     uuid.UUID
+	SetsWeight     pqtype.NullRawMessage
+	Rest           sql.NullInt64
+	Duration       sql.NullInt64
+	DeclineIncline sql.NullInt64
+	Notes          sql.NullString
+	CreatedAt      sql.NullTime
+	ModifiedAt     sql.NullTime
+}

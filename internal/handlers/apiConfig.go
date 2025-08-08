@@ -6,6 +6,7 @@ import (
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
 	"github.com/carlogy/WorkoutBuilder/internal/database"
+	"github.com/google/uuid"
 )
 
 type ApiConfig struct {
@@ -39,4 +40,20 @@ func (ac *ApiConfig) ValidateJWTRequestHeader(next http.HandlerFunc) http.Handle
 
 		next.ServeHTTP(w, r)
 	})
+}
+
+func (ac *ApiConfig) GetUserIDFromToken(headers http.Header) (uuid.UUID, error) {
+
+	token, err := auth.GetBearerToken(headers)
+	if err != nil {
+		fmt.Println("Error getting token ", token, err)
+		return uuid.Nil, err
+	}
+
+	id, err := auth.ValidateJWT(token, ac.secret)
+	if err != nil {
+		fmt.Println("Error validating token ", token, err)
+		return uuid.Nil, err
+	}
+	return id, nil
 }

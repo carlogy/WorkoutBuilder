@@ -55,7 +55,7 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 		Equipment             string            `json:"equipment"`
 		PrimaryMuscleGroups   map[string]string `json:"primaryMuscleGroups"`
 		SecondaryMuscleGroups map[string]string `json:"secondaryMuscleGroups"`
-		Description           string            `json:"description"`
+		Description           *string           `json:"description"`
 		PreviousSetRepCount   map[int]int       `json:"previousSetRepCount"`
 		RestBetweenSets       int               `json:"restBetweenSets"`
 	}

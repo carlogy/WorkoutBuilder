@@ -66,8 +66,8 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	createdUser, err := uh.conf.db.CreateUser(r.Context(), database.CreateUserParams{
-		FirstName: services.NoneNullToNullString(*body.FirstName),
-		LastName:  services.NoneNullToNullString(*body.LastName),
+		FirstName: services.NoneNullToNullString(body.FirstName),
+		LastName:  services.NoneNullToNullString(body.LastName),
 		Email:     body.Email,
 		Password:  hashPW,
 	})

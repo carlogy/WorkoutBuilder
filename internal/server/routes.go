@@ -13,13 +13,18 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	eh := handlers.NewExerciseHandler(s.ApiConfig)
 	uh := handlers.NewUserHandler(s.ApiConfig)
+	ueh := handlers.NewUserExerciseHanlder(s.ApiConfig)
+
 	mux.HandleFunc("GET /api/exercises", s.ValidateJWTRequestHeader(eh.GetExercises))
 	mux.HandleFunc("GET /api/exercises/{id}", s.ValidateJWTRequestHeader(eh.GetExerciseById))
 	mux.HandleFunc("DELETE /api/exercises/{id}", s.ValidateJWTRequestHeader(eh.DeleteExerciseByID))
 	mux.HandleFunc("POST /api/exercises", s.ValidateJWTRequestHeader(eh.CreateExercise))
 
+	mux.HandleFunc("POST /api/record-exercise", s.ValidateJWTRequestHeader(ueh.CreateUserExerciseHandler))
+
 	mux.HandleFunc("POST /api/users", uh.CreateUser)
 
 	mux.HandleFunc("POST /api/login", uh.AuthenticateByEmail)
+
 	return mux
 }
