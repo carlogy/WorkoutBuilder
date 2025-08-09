@@ -70,6 +70,25 @@ func createDBUserExerciseParams(jsonUserParam CreateUserExerciseParams) (databas
 
 }
 
+func createUpdateUserExerciseParams(jsonParams CreateUserExerciseParams, recordID uuid.UUID) (database.UpdateUserExcerciseRecordByIdParams, error) {
+
+	jsonSetWeight, err := services.ConvertMapsToRawJSON(jsonParams.SetsWeight)
+	if err != nil {
+		fmt.Println("Error converting sets weight to rawjson ", err)
+		return database.UpdateUserExcerciseRecordByIdParams{}, err
+	}
+
+	dbUE := database.UpdateUserExcerciseRecordByIdParams{
+		SetsWeight:     jsonSetWeight,
+		Rest:           services.NoneNullIntToNullInt(jsonParams.Rest),
+		Duration:       services.NoneNullIntToNullInt(jsonParams.Duration),
+		DeclineIncline: services.NoneNullIntToNullInt(jsonParams.Decline_Incline),
+		Notes:          services.NoneNullToNullString(jsonParams.Notes),
+		ID:             recordID,
+	}
+	return dbUE, nil
+}
+
 func (ueh *UserExerciseHandler) CreateUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
 
 	id, err := ueh.conf.GetUserIDFromToken(r.Header)
@@ -112,4 +131,137 @@ func (ueh *UserExerciseHandler) CreateUserExerciseHandler(w http.ResponseWriter,
 	}
 
 	ueh.writeJSONResponse(w, userExercise, http.StatusCreated)
+}
+
+func (ueh *UserExerciseHandler) GetUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
+
+	recordID := r.PathValue("id")
+	recordUUID, err := uuid.Parse(recordID)
+	if err != nil {
+		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+		return
+	}
+
+	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	if err != nil {
+		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+		return
+	}
+
+	dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), recordUUID)
+	if err != nil {
+		http.Error(w, "Record Not found", http.StatusNotFound)
+		fmt.Println("Error getting record from db ", err)
+		return
+	}
+
+	if dbRecord.Userid != tokenUserid {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		fmt.Println("Error exerciseRecordUser and request token user don't match ", err)
+		return
+	}
+
+	userExercise, err := services.ConvertDBUserExerciseToUserExercise(dbRecord)
+	if err != nil {
+		http.Error(w, "Error preparing json reponse ", http.StatusInternalServerError)
+		fmt.Println("Errorconverting db record for json response ", err)
+		return
+	}
+
+	ueh.writeJSONResponse(w, userExercise, http.StatusOK)
+}
+
+func (ueh *UserExerciseHandler) UpdateUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
+
+	recordID := r.PathValue("id")
+	uuidRecordID, err := uuid.Parse(recordID)
+	if err != nil {
+		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+		return
+	}
+
+	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	if err != nil {
+		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+		return
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	body := CreateUserExerciseParams{}
+	err = decoder.Decode(&body)
+	if err != nil {
+		http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+		return
+	}
+
+	if tokenUserid != body.UserID {
+		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+		return
+	}
+
+	dbupdateParams, err := createUpdateUserExerciseParams(body, uuidRecordID)
+	if err != nil {
+		http.Error(w, "Error creating entity", 500)
+		fmt.Println("Error creating userExercise params: ", err)
+		return
+	}
+
+	updatedUERecord, err := ueh.conf.db.UpdateUserExcerciseRecordById(r.Context(), dbupdateParams)
+	if err != nil {
+		http.Error(w, "Error updating record", http.StatusInternalServerError)
+		fmt.Println("Error updating record ", err)
+		return
+	}
+
+	convertedUERecord, err := services.ConvertDBUserExerciseToUserExercise(updatedUERecord)
+	if err != nil {
+		http.Error(w, "error encoding response", http.StatusInternalServerError)
+		fmt.Println("Error converting db to response record: ", err)
+		return
+	}
+
+	ueh.writeJSONResponse(w, convertedUERecord, http.StatusOK)
+}
+
+func (ueh *UserExerciseHandler) DeleteUserExerciseRecordById(w http.ResponseWriter, r *http.Request) {
+	recordID := r.PathValue("id")
+	uuidRecordID, err := uuid.Parse(recordID)
+	if err != nil {
+		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+		return
+	}
+
+	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	if err != nil {
+		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+		return
+	}
+
+	dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), uuidRecordID)
+	if err != nil {
+		http.Error(w, "Error invalid recordID", http.StatusInternalServerError)
+		fmt.Println("Error querying for record in db: ", err)
+		return
+	}
+
+	if tokenUserid != dbRecord.Userid {
+		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+		return
+	}
+
+	deletedRecord, err := ueh.conf.db.DeleteUserExerciseRecordById(r.Context(), uuidRecordID)
+	if err != nil {
+		http.Error(w, "Error deleting record", http.StatusInternalServerError)
+		fmt.Println("Error attempting to delete record: ", err)
+		return
+	}
+
+	jsonReponseRecord, err := services.ConvertDBUserExerciseToUserExercise(deletedRecord)
+	if err != nil {
+		http.Error(w, "Error preparing jsonResponse", http.StatusInternalServerError)
+		fmt.Println("Error converting db record to jsonResponse: ", err)
+		return
+	}
+
+	ueh.writeJSONResponse(w, jsonReponseRecord, http.StatusOK)
 }

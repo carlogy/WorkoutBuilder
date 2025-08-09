@@ -34,7 +34,7 @@ func ConvertDBUserExerciseToUserExercise(ue database.UserExercise) (UserExercise
 	userExercise := UserExercise{
 		ID:         ue.ID,
 		UserID:     ue.Userid,
-		ExerciseID: ue.Userid,
+		ExerciseID: ue.Exerciseid,
 		SetsWeight: setsWeight,
 		Rest:       NullInttoInt(ue.Rest),
 		Duration:   NullInttoInt(ue.Duration),

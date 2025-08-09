@@ -65,3 +65,103 @@ func (q *Queries) CreateUserExercise(ctx context.Context, arg CreateUserExercise
 	)
 	return i, err
 }
+
+const deleteUserExerciseRecordById = `-- name: DeleteUserExerciseRecordById :one
+DELETE FROM user_exercises ue
+WHERE ue.id = $1
+RETURNING id, userid, exerciseid, sets_weight, rest, duration, decline_incline, notes, created_at, modified_at
+`
+
+func (q *Queries) DeleteUserExerciseRecordById(ctx context.Context, id uuid.UUID) (UserExercise, error) {
+	row := q.db.QueryRowContext(ctx, deleteUserExerciseRecordById, id)
+	var i UserExercise
+	err := row.Scan(
+		&i.ID,
+		&i.Userid,
+		&i.Exerciseid,
+		&i.SetsWeight,
+		&i.Rest,
+		&i.Duration,
+		&i.DeclineIncline,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
+const getUserExerciseRecordById = `-- name: GetUserExerciseRecordById :one
+SELECT
+    id, userid, exerciseid, sets_weight, rest, duration, decline_incline, notes, created_at, modified_at
+FROM
+    user_exercises ue
+WHERE
+    ue.id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUserExerciseRecordById(ctx context.Context, id uuid.UUID) (UserExercise, error) {
+	row := q.db.QueryRowContext(ctx, getUserExerciseRecordById, id)
+	var i UserExercise
+	err := row.Scan(
+		&i.ID,
+		&i.Userid,
+		&i.Exerciseid,
+		&i.SetsWeight,
+		&i.Rest,
+		&i.Duration,
+		&i.DeclineIncline,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
+const updateUserExcerciseRecordById = `-- name: UpdateUserExcerciseRecordById :one
+UPDATE
+    user_exercises
+SET
+    sets_weight = $1,
+    rest = $2,
+    duration = $3,
+    decline_incline = $4,
+    notes = $5,
+    modified_at = NOW()
+WHERE
+    id = $6
+RETURNING id, userid, exerciseid, sets_weight, rest, duration, decline_incline, notes, created_at, modified_at
+`
+
+type UpdateUserExcerciseRecordByIdParams struct {
+	SetsWeight     pqtype.NullRawMessage
+	Rest           sql.NullInt64
+	Duration       sql.NullInt64
+	DeclineIncline sql.NullInt64
+	Notes          sql.NullString
+	ID             uuid.UUID
+}
+
+func (q *Queries) UpdateUserExcerciseRecordById(ctx context.Context, arg UpdateUserExcerciseRecordByIdParams) (UserExercise, error) {
+	row := q.db.QueryRowContext(ctx, updateUserExcerciseRecordById,
+		arg.SetsWeight,
+		arg.Rest,
+		arg.Duration,
+		arg.DeclineIncline,
+		arg.Notes,
+		arg.ID,
+	)
+	var i UserExercise
+	err := row.Scan(
+		&i.ID,
+		&i.Userid,
+		&i.Exerciseid,
+		&i.SetsWeight,
+		&i.Rest,
+		&i.Duration,
+		&i.DeclineIncline,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
