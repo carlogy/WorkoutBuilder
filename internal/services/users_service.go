@@ -29,6 +29,30 @@ func ConvertDBUserToUser(u database.CreateUserRow) User {
 	return user
 }
 
+func ConvertDBUpdateUserToUser(u database.UpdateUserByIdRow) User {
+	user := User{
+		ID:         u.ID,
+		FirstName:  NullStringToString(u.FirstName),
+		LastName:   NullStringToString(u.LastName),
+		Email:      u.Email,
+		CreatedAt:  NullTimeToTime(u.CreatedAt),
+		ModifiedAt: NullTimeToTime(u.ModifiedAt),
+	}
+	return user
+}
+
+func ConvertDBDeleteUserToUser(u database.DeleteUserByIdRow) User {
+	user := User{
+		ID:         u.ID,
+		FirstName:  NullStringToString(u.FirstName),
+		LastName:   NullStringToString(u.LastName),
+		Email:      u.Email,
+		CreatedAt:  NullTimeToTime(u.CreatedAt),
+		ModifiedAt: NullTimeToTime(u.ModifiedAt),
+	}
+	return user
+}
+
 func ConvertFullDBUserToUser(u database.User, t *string) User {
 
 	user := User{
