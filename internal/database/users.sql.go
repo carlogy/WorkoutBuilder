@@ -61,6 +61,37 @@ func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateU
 	return i, err
 }
 
+const deleteUserById = `-- name: DeleteUserById :one
+DELETE FROM
+    users u
+WHERE
+    u.id = $1
+RETURNING id, first_name, last_name, email, created_at, modified_at
+`
+
+type DeleteUserByIdRow struct {
+	ID         uuid.UUID
+	FirstName  sql.NullString
+	LastName   sql.NullString
+	Email      string
+	CreatedAt  sql.NullTime
+	ModifiedAt sql.NullTime
+}
+
+func (q *Queries) DeleteUserById(ctx context.Context, id uuid.UUID) (DeleteUserByIdRow, error) {
+	row := q.db.QueryRowContext(ctx, deleteUserById, id)
+	var i DeleteUserByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT
    id, first_name, last_name, email, password, created_at, modified_at
@@ -79,6 +110,57 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.LastName,
 		&i.Email,
 		&i.Password,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
+const updateUserById = `-- name: UpdateUserById :one
+UPDATE
+    users
+SET
+    first_name = $1,
+    last_name = $2,
+    email = $3,
+    password = $4,
+    modified_at = NOW()
+WHERE
+    id = $5
+RETURNING id, first_name, last_name, email, created_at, modified_at
+`
+
+type UpdateUserByIdParams struct {
+	FirstName sql.NullString
+	LastName  sql.NullString
+	Email     string
+	Password  string
+	ID        uuid.UUID
+}
+
+type UpdateUserByIdRow struct {
+	ID         uuid.UUID
+	FirstName  sql.NullString
+	LastName   sql.NullString
+	Email      string
+	CreatedAt  sql.NullTime
+	ModifiedAt sql.NullTime
+}
+
+func (q *Queries) UpdateUserById(ctx context.Context, arg UpdateUserByIdParams) (UpdateUserByIdRow, error) {
+	row := q.db.QueryRowContext(ctx, updateUserById,
+		arg.FirstName,
+		arg.LastName,
+		arg.Email,
+		arg.Password,
+		arg.ID,
+	)
+	var i UpdateUserByIdRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
