@@ -45,3 +45,12 @@ type UserExercise struct {
 	CreatedAt      sql.NullTime
 	ModifiedAt     sql.NullTime
 }
+
+type Workout struct {
+	ID          uuid.UUID
+	Name        string
+	Description sql.NullString
+	Exercises   pqtype.NullRawMessage
+	CreatedAt   sql.NullTime
+	ModifiedAt  sql.NullTime
+}
