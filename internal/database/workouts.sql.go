@@ -9,6 +9,7 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/google/uuid"
 	"github.com/sqlc-dev/pqtype"
 )
 
@@ -43,4 +44,83 @@ func (q *Queries) CreateWorkOut(ctx context.Context, arg CreateWorkOutParams) (W
 		&i.ModifiedAt,
 	)
 	return i, err
+}
+
+const deleteWorkoutByID = `-- name: DeleteWorkoutByID :one
+DELETE FROM workouts
+WHERE id = $1
+RETURNING id, name, description, exercises, created_at, modified_at
+`
+
+func (q *Queries) DeleteWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, error) {
+	row := q.db.QueryRowContext(ctx, deleteWorkoutByID, id)
+	var i Workout
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Exercises,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
+const getWorkoutByID = `-- name: GetWorkoutByID :one
+SELECT
+    id, name, description, exercises, created_at, modified_at
+FROM
+    workouts w
+WHERE
+    w.id = $1
+`
+
+func (q *Queries) GetWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, error) {
+	row := q.db.QueryRowContext(ctx, getWorkoutByID, id)
+	var i Workout
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Exercises,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
+}
+
+const getWorkouts = `-- name: GetWorkouts :many
+SELECT id, name, description, exercises, created_at, modified_at
+FROM
+    workouts
+`
+
+func (q *Queries) GetWorkouts(ctx context.Context) ([]Workout, error) {
+	rows, err := q.db.QueryContext(ctx, getWorkouts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Workout
+	for rows.Next() {
+		var i Workout
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Exercises,
+			&i.CreatedAt,
+			&i.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

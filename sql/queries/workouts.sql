@@ -9,3 +9,21 @@ Values(
     NOW()
 )
 RETURNING *;
+
+-- name: GetWorkouts :many
+SELECT *
+FROM
+    workouts;
+
+-- name: GetWorkoutByID :one
+SELECT
+    *
+FROM
+    workouts w
+WHERE
+    w.id = $1;
+
+-- name: DeleteWorkoutByID :one
+DELETE FROM workouts
+WHERE id = $1
+RETURNING *;

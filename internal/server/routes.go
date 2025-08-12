@@ -31,6 +31,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("DELETE /api/users/{id}", s.ValidateJWTRequestHeader(uh.DeleteUserById))
 
 	mux.HandleFunc("POST /api/workouts", s.ValidateJWTRequestHeader(wh.CreateWorkoutHandler))
+	mux.HandleFunc("GET /api/workouts", s.ValidateJWTRequestHeader(wh.GetWorkouts))
+	mux.HandleFunc("GET /api/workouts/{id}", s.ValidateJWTRequestHeader(wh.GetWorkoutById))
+	mux.HandleFunc("DELETE /api/workouts/{id}", s.ValidateJWTRequestHeader(wh.DeleteWorkoutById))
 
 	mux.HandleFunc("POST /api/login", uh.AuthenticateByEmail)
 
