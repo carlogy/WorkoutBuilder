@@ -149,7 +149,7 @@ func TestCompareNonMatcthingPWHashPW(t *testing.T) {
 
 func TestJWTs(t *testing.T) {
 	userID := uuid.New()
-	validToken, _ := auth.MakeJWT(userID, "SecretString", time.Hour)
+	validToken, _ := auth.MakeJWT(userID, "SecretString")
 
 	testCases := []struct {
 		name           string
