@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
-	b "golang.org/x/crypto/bcrypt"
 )
 
 type TokenType string
@@ -18,40 +17,14 @@ const (
 	TokenTypeAccess TokenType = "workoutBuilder-access"
 )
 
-func HashPassword(password string) (string, error) {
-
-	if len(password) > 72 {
-		return "", errors.New("password is longer than the accepted limit")
-	}
-
-	hashedPW, err := b.GenerateFromPassword([]byte(password), 12)
-
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPW), err
-
-}
-
-func CheckPasswordHash(p, hashp string) error {
-
-	err := b.CompareHashAndPassword([]byte(hashp), []byte(p))
-
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func MakeJWT(userId uuid.UUID, tokenSecret string, expiresIn time.Duration) (string, error) {
+func MakeJWT(userId uuid.UUID, tokenSecret string) (string, error) {
 
 	signingKey := []byte(tokenSecret)
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.RegisteredClaims{
 		Issuer:    string(TokenTypeAccess),
 		IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
-		ExpiresAt: jwt.NewNumericDate(time.Now().Add(expiresIn).UTC()),
+		ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour).UTC()),
 		Subject:   userId.String(),
 	})
 
