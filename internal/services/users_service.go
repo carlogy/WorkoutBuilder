@@ -8,13 +8,14 @@ import (
 )
 
 type User struct {
-	ID         id.UUID    `json:"id"`
-	FirstName  *string    `json:"firstName"`
-	LastName   *string    `json:"lastName"`
-	Email      string     `json:"email"`
-	Token      *string    `json:"token"`
-	CreatedAt  *time.Time `json:"createdAt"`
-	ModifiedAt *time.Time `json:"modifiedAt"`
+	ID            id.UUID    `json:"id"`
+	FirstName     *string    `json:"firstName"`
+	LastName      *string    `json:"lastName"`
+	Email         string     `json:"email"`
+	Token         *string    `json:"token"`
+	Refresh_Token *string    `json:"refresh_token"`
+	CreatedAt     *time.Time `json:"createdAt"`
+	ModifiedAt    *time.Time `json:"modifiedAt"`
 }
 
 func ConvertDBUserToUser(u database.CreateUserRow) User {
@@ -53,16 +54,17 @@ func ConvertDBDeleteUserToUser(u database.DeleteUserByIdRow) User {
 	return user
 }
 
-func ConvertFullDBUserToUser(u database.User, t *string) User {
+func ConvertFullDBUserToUser(u database.User, t *string, rt *string) User {
 
 	user := User{
-		ID:         u.ID,
-		FirstName:  NullStringToString(u.FirstName),
-		LastName:   NullStringToString(u.LastName),
-		Email:      u.Email,
-		CreatedAt:  NullTimeToTime(u.CreatedAt),
-		ModifiedAt: NullTimeToTime(u.ModifiedAt),
-		Token:      t,
+		ID:            u.ID,
+		FirstName:     NullStringToString(u.FirstName),
+		LastName:      NullStringToString(u.LastName),
+		Email:         u.Email,
+		CreatedAt:     NullTimeToTime(u.CreatedAt),
+		ModifiedAt:    NullTimeToTime(u.ModifiedAt),
+		Token:         t,
+		Refresh_Token: rt,
 	}
 	return user
 }

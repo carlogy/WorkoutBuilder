@@ -23,6 +23,15 @@ type Exercise struct {
 	ModifiedAt            sql.NullTime
 }
 
+type RefreshToken struct {
+	Token     string
+	CreatedAt sql.NullTime
+	UpdatedAt sql.NullTime
+	UserID    uuid.UUID
+	ExpiresAt sql.NullTime
+	RevokedAt sql.NullTime
+}
+
 type User struct {
 	ID         uuid.UUID
 	FirstName  sql.NullString

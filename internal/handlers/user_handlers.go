@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
 	"github.com/carlogy/WorkoutBuilder/internal/database"
@@ -88,9 +87,8 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Request) {
 
 	type emailAuthentication struct {
-		Email            string `json:"email"`
-		Password         string `json:"password"`
-		ExpiresInSeconds *int   `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	ea := emailAuthentication{}
@@ -116,25 +114,31 @@ func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if ea.ExpiresInSeconds != nil {
-		token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Duration(*ea.ExpiresInSeconds*int(time.Second)))
-		if err != nil {
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			fmt.Printf("Eror making JWT: %v", err)
-			return
-		}
-		u := services.ConvertFullDBUserToUser(dbUser, &token)
-		uh.writeJSONResponse(w, u, http.StatusOK)
-		return
-	}
-
-	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret, time.Hour)
+	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret)
 	if err != nil {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Printf("Eror making JWT: %v", err)
 		return
 	}
-	u := services.ConvertFullDBUserToUser(dbUser, &token)
+
+	refreshToken, err := auth.MakeRefreshToken()
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		fmt.Println("Error creating refresh token: ", err)
+		return
+	}
+
+	_, err = uh.conf.db.StoreRefreshToken(r.Context(), database.StoreRefreshTokenParams{
+		Token:  refreshToken,
+		UserID: dbUser.ID,
+	})
+	if err != nil {
+		http.Error(w, "Error creating refresh token", http.StatusInternalServerError)
+		fmt.Println("Error storing refresh token: ", err)
+		return
+	}
+
+	u := services.ConvertFullDBUserToUser(dbUser, &token, &refreshToken)
 	uh.writeJSONResponse(w, u, http.StatusOK)
 }
 
