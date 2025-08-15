@@ -84,64 +84,6 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 	uh.writeJSONResponse(w, u, 200)
 }
 
-func (uh *UserHandler) AuthenticateByEmail(w http.ResponseWriter, r *http.Request) {
-
-	type emailAuthentication struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
-	}
-
-	ea := emailAuthentication{}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&ea)
-	if err != nil {
-		http.Error(w, "Error deserializing request body", 500)
-		fmt.Printf("Error deserializing request body:\t%v\n", err.Error())
-		return
-	}
-
-	dbUser, err := uh.conf.db.GetUserByEmail(r.Context(), ea.Email)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		fmt.Printf("Error querying user from db by email:\t%v\n", err.Error())
-		return
-	}
-
-	err = auth.CheckPasswordHash(ea.Password, dbUser.Password)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		fmt.Printf("Error comparing pw to stored hash:\t%v\n", err.Error())
-		return
-	}
-
-	token, err := auth.MakeJWT(dbUser.ID, uh.conf.secret)
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		fmt.Printf("Eror making JWT: %v", err)
-		return
-	}
-
-	refreshToken, err := auth.MakeRefreshToken()
-	if err != nil {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		fmt.Println("Error creating refresh token: ", err)
-		return
-	}
-
-	_, err = uh.conf.db.StoreRefreshToken(r.Context(), database.StoreRefreshTokenParams{
-		Token:  refreshToken,
-		UserID: dbUser.ID,
-	})
-	if err != nil {
-		http.Error(w, "Error creating refresh token", http.StatusInternalServerError)
-		fmt.Println("Error storing refresh token: ", err)
-		return
-	}
-
-	u := services.ConvertFullDBUserToUser(dbUser, &token, &refreshToken)
-	uh.writeJSONResponse(w, u, http.StatusOK)
-}
-
 func (uh *UserHandler) UpdateUserById(w http.ResponseWriter, r *http.Request) {
 
 	userId := r.PathValue("id")

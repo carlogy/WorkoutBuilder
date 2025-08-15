@@ -11,6 +11,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.Handle("/", http.FileServer(http.Dir("public")))
 
+	ah := handlers.NewAuthHandler(s.ApiConfig)
 	eh := handlers.NewExerciseHandler(s.ApiConfig)
 	uh := handlers.NewUserHandler(s.ApiConfig)
 	ueh := handlers.NewUserExerciseHanlder(s.ApiConfig)
@@ -35,7 +36,8 @@ func (s *Server) RegisterRoutes() http.Handler {
 	mux.HandleFunc("GET /api/workouts/{id}", s.ValidateJWTRequestHeader(wh.GetWorkoutById))
 	mux.HandleFunc("DELETE /api/workouts/{id}", s.ValidateJWTRequestHeader(wh.DeleteWorkoutById))
 
-	mux.HandleFunc("POST /api/login", uh.AuthenticateByEmail)
+	mux.HandleFunc("POST /api/login", ah.AuthenticateByEmail)
+	mux.HandleFunc("POST /api/refresh", ah.RefreshTokenHandler)
 
 	return mux
 }

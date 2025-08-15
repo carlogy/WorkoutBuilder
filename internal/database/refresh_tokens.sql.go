@@ -7,9 +7,63 @@ package database
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/google/uuid"
 )
+
+// #nosec G101 -- This is a false positive
+const getRefreshToken = `-- name: GetRefreshToken :one
+SELECT id, first_name, last_name, email, password, u.created_at, modified_at, token, rt.created_at, updated_at, user_id, expires_at, revoked_at
+    FROM users u
+INNER JOIN
+    refresh_tokens rt
+ON
+    rt.user_id = u.user_id
+WHERE
+    rt.token = $1
+AND
+    rt.revoked_at is not null
+AND
+    rt.expires_at > NOW()
+`
+
+type GetRefreshTokenRow struct {
+	ID          uuid.UUID
+	FirstName   sql.NullString
+	LastName    sql.NullString
+	Email       string
+	Password    string
+	CreatedAt   sql.NullTime
+	ModifiedAt  sql.NullTime
+	Token       string
+	CreatedAt_2 sql.NullTime
+	UpdatedAt   sql.NullTime
+	UserID      uuid.UUID
+	ExpiresAt   sql.NullTime
+	RevokedAt   sql.NullTime
+}
+
+func (q *Queries) GetRefreshToken(ctx context.Context, token string) (GetRefreshTokenRow, error) {
+	row := q.db.QueryRowContext(ctx, getRefreshToken, token)
+	var i GetRefreshTokenRow
+	err := row.Scan(
+		&i.ID,
+		&i.FirstName,
+		&i.LastName,
+		&i.Email,
+		&i.Password,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+		&i.Token,
+		&i.CreatedAt_2,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
 
 // #nosec G101 -- This is a false positive
 const storeRefreshToken = `-- name: StoreRefreshToken :one
@@ -29,9 +83,35 @@ type StoreRefreshTokenParams struct {
 	UserID uuid.UUID
 }
 
-// #nosec G101 -- This is a false positive
 func (q *Queries) StoreRefreshToken(ctx context.Context, arg StoreRefreshTokenParams) (RefreshToken, error) {
 	row := q.db.QueryRowContext(ctx, storeRefreshToken, arg.Token, arg.UserID)
+	var i RefreshToken
+	err := row.Scan(
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
+// #nosec G101 -- This is a false positive
+const updateRefreshToken = `-- name: UpdateRefreshToken :one
+UPDATE refresh_tokens
+SET token = $1
+WHERE token = $2
+RETURNING token, created_at, updated_at, user_id, expires_at, revoked_at
+`
+
+type UpdateRefreshTokenParams struct {
+	Token   string
+	Token_2 string
+}
+
+func (q *Queries) UpdateRefreshToken(ctx context.Context, arg UpdateRefreshTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, updateRefreshToken, arg.Token, arg.Token_2)
 	var i RefreshToken
 	err := row.Scan(
 		&i.Token,
