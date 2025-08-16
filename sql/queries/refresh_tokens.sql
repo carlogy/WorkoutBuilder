@@ -25,9 +25,25 @@ AND
 AND
     rt.expires_at > NOW();
 
--- #nosec G101 -- This is a false positive
+
 -- name: UpdateRefreshToken :one
+-- #nosec G101 -- This is a false positive
 UPDATE refresh_tokens
 SET token = $1
 WHERE token = $2
+    AND
+        revoked_at is null
+    AND
+        expires_at > NOW()
+RETURNING *;
+
+
+-- name: RevokeRefreshToken :one
+-- #nosec G101 -- This is a false positive
+UPDATE refresh_tokens
+SET
+    revoked_at = NOW(),
+    updated_at = NOW()
+WHERE
+    token = $1
 RETURNING *;

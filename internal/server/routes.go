@@ -38,6 +38,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.HandleFunc("POST /api/login", ah.AuthenticateByEmail)
 	mux.HandleFunc("POST /api/refresh", ah.RefreshTokenHandler)
+	mux.HandleFunc("POST /api/revoke", ah.RevokeTokenHandler)
 
 	return mux
 }

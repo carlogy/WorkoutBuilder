@@ -119,7 +119,7 @@ func (ah *AuthHanlder) RefreshTokenHandler(w http.ResponseWriter, r *http.Reques
 		Token_2: token,
 	})
 	if err != nil {
-		http.Error(w, "Error updating refresh token", http.StatusInternalServerError)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		fmt.Println("Error updating token in db: ", err)
 		return
 	}
@@ -131,4 +131,28 @@ func (ah *AuthHanlder) RefreshTokenHandler(w http.ResponseWriter, r *http.Reques
 	body := responseRefreshToken{RefreshToken: dbToken.Token}
 
 	ah.writeJSONResponse(w, body, http.StatusOK)
+}
+
+func (ah *AuthHanlder) RevokeTokenHandler(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		fmt.Println("Error getting bearer refresh token: ", err)
+		return
+	}
+
+	revokedToken, err := ah.conf.db.RevokeRefreshToken(r.Context(), token)
+	if err != nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		fmt.Println("Error revoking token in db: ", err)
+		return
+	}
+
+	if !revokedToken.RevokedAt.Valid {
+		http.Error(w, "Unexpected", http.StatusInternalServerError)
+		fmt.Println("Token returned is not revoked:  ", revokedToken.RevokedAt)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
