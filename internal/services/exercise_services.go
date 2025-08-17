@@ -20,7 +20,7 @@ const (
 
 type Exercise struct {
 	ID                    uuid.UUID         `json:"id"`
-	Name                  string            `json:"name:"`
+	Name                  string            `json:"name"`
 	ExerciseType          ExerciseType      `json:"exerciseType"`
 	Equipment             string            `json:"equipment"`
 	PrimaryMuscleGroups   map[string]string `json:"primaryMuscleGroups"`
