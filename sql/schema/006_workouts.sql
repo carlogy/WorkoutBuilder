@@ -1,9 +1,8 @@
 -- +goose Up
 CREATE TABLE workouts (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     Name TEXT NOT NULL,
     Description TEXT,
-    Exercises JSONB,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     modified_at TIMESTAMPTZ DEFAULT NOW()
 );
