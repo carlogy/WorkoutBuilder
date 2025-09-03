@@ -4,6 +4,8 @@ import (
 	"net/http"
 
 	"github.com/carlogy/WorkoutBuilder/internal/handlers"
+	"github.com/carlogy/WorkoutBuilder/internal/repositories"
+	"github.com/carlogy/WorkoutBuilder/internal/services"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
@@ -15,7 +17,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	eh := handlers.NewExerciseHandler(s.ApiConfig)
 	uh := handlers.NewUserHandler(s.ApiConfig)
 	ueh := handlers.NewUserExerciseHanlder(s.ApiConfig)
-	wh := handlers.NewWorkoutHandler(s.ApiConfig)
+	wh := handlers.NewWorkoutHandler(*services.NewWorkoutService(repositories.NewWorkoutRepository(s.Config.Queries), s.SecretKey))
 
 	mux.HandleFunc("GET /api/exercises", s.ValidateJWTRequestHeader(eh.GetExercises))
 	mux.HandleFunc("GET /api/exercises/{id}", s.ValidateJWTRequestHeader(eh.GetExerciseById))

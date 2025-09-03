@@ -15,36 +15,55 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type Config struct {
+	Port      int
+	SecretKey string
+	DBURI     string
+	*database.Queries
+}
+
 type Server struct {
-	port int
+	*Config
 	*handlers.ApiConfig
+}
+
+func NewConfig() *Config {
+	port, _ := strconv.Atoi(os.Getenv("PORT"))
+	secret := os.Getenv("JWTSECRET")
+	dbURI := os.Getenv("WORKOUTBUILDER_DB_URL")
+
+	return &Config{
+		Port:      port,
+		SecretKey: secret,
+		DBURI:     dbURI,
+	}
 }
 
 func NewServer() *http.Server {
 
-	port, _ := strconv.Atoi(os.Getenv("PORT"))
-	secret := os.Getenv("JWTSECRET")
-	connStr := os.Getenv("WORKOUTBUILDER_DB_URL")
-	if connStr == "" {
+	cfg := NewConfig()
+
+	if cfg.DBURI == "" {
 		log.Fatal("DB URL must be set")
 	}
 
-	dbConn, err := sql.Open("postgres", connStr)
+	dbConn, err := sql.Open("postgres", cfg.DBURI)
 	if err != nil {
 		log.Fatalf("Unable open connection to database: %v", err)
 	}
 
 	dbQueries := database.New(dbConn)
+	cfg.Queries = dbQueries
 
-	apiConfig := handlers.NewApiConfig(dbQueries, secret)
+	apiCfg := handlers.NewApiConfig(cfg.Queries, cfg.SecretKey)
 
 	NewServer := &Server{
-		port:      port,
-		ApiConfig: apiConfig,
+		Config:    cfg,
+		ApiConfig: apiCfg,
 	}
 
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", NewServer.port),
+		Addr:              fmt.Sprintf(":%d", NewServer.Config.Port),
 		Handler:           NewServer.RegisterRoutes(),
 		ReadTimeout:       5 * time.Second,
 		ReadHeaderTimeout: 3 * time.Second,

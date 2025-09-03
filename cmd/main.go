@@ -22,9 +22,8 @@ func main() {
 	fmt.Println("Workout Builder!")
 
 	server := server.NewServer()
-
-	err = server.ListenAndServe()
 	log.Printf("Listening on Port:\t%v", os.Getenv("PORT"))
+	err = server.ListenAndServe()
 	if err != nil {
 		log.Fatalf("Server failed: %v", err)
 
