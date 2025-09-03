@@ -10,36 +10,32 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
-	"github.com/sqlc-dev/pqtype"
 )
 
 const createWorkOut = `-- name: CreateWorkOut :one
-INSERT INTO workouts (id, name, description, exercises, created_at, modified_at)
+INSERT INTO workouts (id, name, description,created_at, modified_at)
 Values(
     gen_random_uuid(),
     $1,
     $2,
-    $3,
     NOW(),
     NOW()
 )
-RETURNING id, name, description, exercises, created_at, modified_at
+RETURNING id, name, description, created_at, modified_at
 `
 
 type CreateWorkOutParams struct {
 	Name        string
 	Description sql.NullString
-	Exercises   pqtype.NullRawMessage
 }
 
 func (q *Queries) CreateWorkOut(ctx context.Context, arg CreateWorkOutParams) (Workout, error) {
-	row := q.db.QueryRowContext(ctx, createWorkOut, arg.Name, arg.Description, arg.Exercises)
+	row := q.db.QueryRowContext(ctx, createWorkOut, arg.Name, arg.Description)
 	var i Workout
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.Exercises,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
@@ -49,7 +45,7 @@ func (q *Queries) CreateWorkOut(ctx context.Context, arg CreateWorkOutParams) (W
 const deleteWorkoutByID = `-- name: DeleteWorkoutByID :one
 DELETE FROM workouts
 WHERE id = $1
-RETURNING id, name, description, exercises, created_at, modified_at
+RETURNING id, name, description, created_at, modified_at
 `
 
 func (q *Queries) DeleteWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, error) {
@@ -59,7 +55,6 @@ func (q *Queries) DeleteWorkoutByID(ctx context.Context, id uuid.UUID) (Workout,
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.Exercises,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
@@ -68,7 +63,7 @@ func (q *Queries) DeleteWorkoutByID(ctx context.Context, id uuid.UUID) (Workout,
 
 const getWorkoutByID = `-- name: GetWorkoutByID :one
 SELECT
-    id, name, description, exercises, created_at, modified_at
+    id, name, description, created_at, modified_at
 FROM
     workouts w
 WHERE
@@ -82,7 +77,6 @@ func (q *Queries) GetWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, er
 		&i.ID,
 		&i.Name,
 		&i.Description,
-		&i.Exercises,
 		&i.CreatedAt,
 		&i.ModifiedAt,
 	)
@@ -90,7 +84,7 @@ func (q *Queries) GetWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, er
 }
 
 const getWorkouts = `-- name: GetWorkouts :many
-SELECT id, name, description, exercises, created_at, modified_at
+SELECT id, name, description, created_at, modified_at
 FROM
     workouts
 `
@@ -108,7 +102,6 @@ func (q *Queries) GetWorkouts(ctx context.Context) ([]Workout, error) {
 			&i.ID,
 			&i.Name,
 			&i.Description,
-			&i.Exercises,
 			&i.CreatedAt,
 			&i.ModifiedAt,
 		); err != nil {

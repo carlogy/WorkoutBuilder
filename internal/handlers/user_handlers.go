@@ -7,25 +7,17 @@ import (
 	"net/http"
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
-	"github.com/carlogy/WorkoutBuilder/internal/database"
 	"github.com/carlogy/WorkoutBuilder/internal/services"
-	"github.com/google/uuid"
+	id "github.com/google/uuid"
 )
 
 type UserHandler struct {
-	conf ApiConfig
+	userService *services.UserService
+	authService *services.AuthService
 }
 
-type jsonUser struct {
-	FirstName *string `json:"firstName"`
-	LastName  *string `json:"lastName"`
-	Email     string  `json:"email"`
-	Password  string  `json:"password"`
-}
-
-func NewUserHandler(c *ApiConfig) UserHandler {
-	uh := UserHandler{conf: *c}
-	return uh
+func NewUserHandler(us services.UserService, as services.AuthService) UserHandler {
+	return UserHandler{userService: &us, authService: &as}
 }
 
 func (uh *UserHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -50,7 +42,7 @@ func (uh *UserHandler) writeJSONResponse(w http.ResponseWriter, data interface{}
 
 func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 
-	body := jsonUser{}
+	body := services.UserRequestParams{}
 
 	decoder := json.NewDecoder(r.Body)
 	err := decoder.Decode(&body)
@@ -59,19 +51,7 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashPW, err := auth.HashPassword(body.Password)
-	if err != nil {
-		http.Error(w, "Error creating user", 500)
-		fmt.Printf("Error hashing password:\t%v", err.Error())
-		return
-	}
-
-	createdUser, err := uh.conf.db.CreateUser(r.Context(), database.CreateUserParams{
-		FirstName: services.NoneNullToNullString(body.FirstName),
-		LastName:  services.NoneNullToNullString(body.LastName),
-		Email:     body.Email,
-		Password:  hashPW,
-	})
+	createdUser, err := uh.userService.CreateUser(r.Context(), body)
 
 	if err != nil {
 		http.Error(w, "Error creating User", 500)
@@ -79,15 +59,13 @@ func (uh *UserHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := services.ConvertDBUserToUser(createdUser)
-
-	uh.writeJSONResponse(w, u, 200)
+	uh.writeJSONResponse(w, createdUser, 200)
 }
 
 func (uh *UserHandler) UpdateUserById(w http.ResponseWriter, r *http.Request) {
 
 	userId := r.PathValue("id")
-	userUUID, err := uuid.Parse(userId)
+	userUUID, err := id.Parse(userId)
 	if err != nil {
 		http.Error(w, "Incorrectly formatted userID", http.StatusUnauthorized)
 		fmt.Println("Error parsing requestID as UUID: ", err)
@@ -101,20 +79,13 @@ func (uh *UserHandler) UpdateUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenUserId, err := auth.ValidateJWT(token, uh.conf.secret)
+	err = uh.authService.ValidateJWT(token, userUUID)
 	if err != nil {
-		http.Error(w, "Invalid Authorization Token", http.StatusUnauthorized)
-		fmt.Println("Error validating token: ", err)
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
 
-	if tokenUserId != userUUID {
-		http.Error(w, "Invalid userId provided for update", http.StatusUnauthorized)
-		fmt.Println("Token user and userID do not match: ", err)
-		return
-	}
-
-	jsonUpdateUser := jsonUser{}
+	jsonUpdateUser := services.UserRequestParams{}
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&jsonUpdateUser)
 	if err != nil {
@@ -123,33 +94,19 @@ func (uh *UserHandler) UpdateUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hashPW, err := auth.HashPassword(jsonUpdateUser.Password)
+	updatedUser, err := uh.userService.UpdateUserById(r.Context(), jsonUpdateUser, token, userUUID)
 	if err != nil {
-		http.Error(w, "Error updating user", http.StatusInternalServerError)
-		fmt.Println("Error hashing password: ", err)
+		http.Error(w, "Failed to update user", http.StatusInternalServerError)
+		fmt.Println("Experienced error while service tried to update user: ", err)
 		return
 	}
 
-	updatedUser, err := uh.conf.db.UpdateUserById(r.Context(), database.UpdateUserByIdParams{
-		FirstName: services.NoneNullToNullString(jsonUpdateUser.FirstName),
-		LastName:  services.NoneNullToNullString(jsonUpdateUser.LastName),
-		Password:  hashPW,
-		ID:        userUUID,
-	})
-	if err != nil {
-		http.Error(w, "Error updating user", http.StatusInternalServerError)
-		fmt.Println("Error updating user, ", err)
-		return
-	}
-
-	convertedUser := services.ConvertDBUpdateUserToUser(updatedUser)
-
-	uh.writeJSONResponse(w, convertedUser, http.StatusOK)
+	uh.writeJSONResponse(w, updatedUser, http.StatusOK)
 }
 
 func (uh *UserHandler) DeleteUserById(w http.ResponseWriter, r *http.Request) {
 	userId := r.PathValue("id")
-	userUUID, err := uuid.Parse(userId)
+	userUUID, err := id.Parse(userId)
 	if err != nil {
 		http.Error(w, "Incorrectly formatted userID", http.StatusUnauthorized)
 		fmt.Println("Error parsing requestID as UUID: ", err)
@@ -163,27 +120,12 @@ func (uh *UserHandler) DeleteUserById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tokenUserId, err := auth.ValidateJWT(token, uh.conf.secret)
-	if err != nil {
-		http.Error(w, "Invalid Authorization Token", http.StatusUnauthorized)
-		fmt.Println("Error validating token: ", err)
-		return
-	}
-
-	if tokenUserId != userUUID {
-		http.Error(w, "Invalid userId provided for update", http.StatusUnauthorized)
-		fmt.Println("Token user and userID do not match: ", err)
-		return
-	}
-
-	deletedUser, err := uh.conf.db.DeleteUserById(r.Context(), userUUID)
+	deletedUser, err := uh.userService.DeleteUserByID(r.Context(), userUUID, token, uh.authService)
 	if err != nil {
 		http.Error(w, "Error deleting user", http.StatusInternalServerError)
 		fmt.Println("Error deleting user: ", err)
 		return
 	}
 
-	jsonReponseUser := services.ConvertDBDeleteUserToUser(deletedUser)
-
-	uh.writeJSONResponse(w, jsonReponseUser, http.StatusOK)
+	uh.writeJSONResponse(w, deletedUser, http.StatusOK)
 }

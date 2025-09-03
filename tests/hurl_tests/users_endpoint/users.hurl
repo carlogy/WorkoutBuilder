@@ -42,8 +42,7 @@ jsonpath "$.refresh_token" exists
 POST http://{{host}}/api/login
 {
     "email": "{{email}}",
-    "password": "Wrong password",
-    "expires_in_seconds": 300
+    "password": "Wrong password"
 }
 HTTP 401
 Content-Type: text/plain; charset=utf-8

@@ -13,9 +13,9 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	mux.Handle("/", http.FileServer(http.Dir("public")))
 
-	ah := handlers.NewAuthHandler(s.ApiConfig)
+	ah := handlers.NewAuthHandler(*services.NewAuthService(*repositories.NewAuthRepository(s.Config.Queries), s.SecretKey))
 	eh := handlers.NewExerciseHandler(s.ApiConfig)
-	uh := handlers.NewUserHandler(s.ApiConfig)
+	uh := handlers.NewUserHandler(*services.NewUserService(*repositories.NewUserRepository(s.Config.Queries), s.SecretKey), *ah.AuthService)
 	ueh := handlers.NewUserExerciseHanlder(s.ApiConfig)
 	wh := handlers.NewWorkoutHandler(*services.NewWorkoutService(repositories.NewWorkoutRepository(s.Config.Queries), s.SecretKey))
 

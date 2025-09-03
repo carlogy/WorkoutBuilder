@@ -20,7 +20,6 @@ jsonpath "$.email" == "RefreshThe@token.com"
 jsonpath "$.createdAt" exists
 jsonpath "$.modifiedAt" exists
 
-
 # Login as User
 POST http://{{host}}/api/login
 {
