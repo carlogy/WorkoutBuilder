@@ -2,6 +2,8 @@ package services
 
 import (
 	"database/sql"
+	"fmt"
+	"math"
 	"time"
 )
 
@@ -44,4 +46,37 @@ func NoneNullIntToNullInt(i *int) sql.NullInt64 {
 		}
 	}
 	return sql.NullInt64{Int64: 0, Valid: false}
+}
+
+func NullInttoInt32(i sql.NullInt32) *int {
+
+	if i.Valid {
+		num := int(i.Int32)
+		return &num
+	}
+	return nil
+}
+
+func NoneNullIntToNullInt32(i *int) sql.NullInt32 {
+
+	num := *i
+	if num < 0 || num > math.MaxInt32 {
+		fmt.Println("Int overflow")
+		return sql.NullInt32{Int32: 0, Valid: false}
+	}
+
+	if i != nil {
+		return sql.NullInt32{
+			Int32: int32(*i),
+			Valid: true,
+		}
+	}
+	return sql.NullInt32{Int32: 0, Valid: false}
+}
+
+func NullBoolToBool(b sql.NullBool) bool {
+	if b.Valid {
+		return b.Bool
+	}
+	return false
 }

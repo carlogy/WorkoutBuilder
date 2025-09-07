@@ -20,6 +20,7 @@ type Config struct {
 	SecretKey string
 	DBURI     string
 	*database.Queries
+	db *sql.DB
 }
 
 type Server struct {
@@ -53,6 +54,7 @@ func NewServer() *http.Server {
 	}
 
 	dbQueries := database.New(dbConn)
+	cfg.db = dbConn
 	cfg.Queries = dbQueries
 
 	apiCfg := handlers.NewApiConfig(cfg.Queries, cfg.SecretKey)

@@ -1,7 +1,6 @@
 -- name: CreateWorkOut :one
-INSERT INTO workouts (id, name, description, exercises, created_at, modified_at)
+INSERT INTO workouts (id, name, description,created_at, modified_at)
 Values(
-    gen_random_uuid(),
     $1,
     $2,
     $3,
@@ -15,13 +14,15 @@ SELECT *
 FROM
     workouts;
 
--- name: GetWorkoutByID :one
+-- name: GetWorkoutByID :many
 SELECT
-    *
-FROM
-    workouts w
-WHERE
-    w.id = $1;
+    sqlc.embed(workouts),
+    sqlc.embed(workout_blocks), sqlc.embed(workout_exercise), sqlc.embed(exercise_sets)
+FROM workouts
+JOIN workout_blocks on workout_blocks.workoutid = workouts.id
+JOIN workout_exercise on workout_exercise.workout_blockid = workout_blocks.id
+JOIN exercise_sets  on exercise_sets.workout_exerciseid = workout_exercise.id
+WHERE workouts.id = $1;
 
 -- name: DeleteWorkoutByID :one
 DELETE FROM workouts

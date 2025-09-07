@@ -1,6 +1,7 @@
 -- +goose Up
 CREATE TABLE workout_exercise (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ordinal INTEGER,
     workout_blockID UUID NOT NULL REFERENCES workout_blocks(id) ON DELETE CASCADE,
     exerciseID UUID NOT NULL REFERENCES exercises(id),
     notes TEXT,

@@ -12,6 +12,7 @@ import (
 
 type WorkoutHandler struct {
 	workoutService *services.WorkoutService
+	authService    *services.AuthService
 }
 
 type WorkoutParamsRequest struct {
@@ -20,8 +21,8 @@ type WorkoutParamsRequest struct {
 	Exercises   []services.WorkoutBlock `json:"exerciseBlocks"`
 }
 
-func NewWorkoutHandler(ws services.WorkoutService) WorkoutHandler {
-	return WorkoutHandler{workoutService: &ws}
+func NewWorkoutHandler(ws services.WorkoutService, as services.AuthService) WorkoutHandler {
+	return WorkoutHandler{workoutService: &ws, authService: &as}
 }
 
 func (wh *WorkoutHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -82,8 +83,6 @@ func (wh WorkoutHandler) CreateWorkoutHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	//handle parsing blocks and exercises in the json request params.
-
 	jwp := services.WorkoutRequestParams{}
 	decoder := json.NewDecoder(r.Body)
 	err = decoder.Decode(&jwp)
@@ -92,7 +91,6 @@ func (wh WorkoutHandler) CreateWorkoutHandler(w http.ResponseWriter, r *http.Req
 		fmt.Println("Error decoing request body: ", err)
 		return
 	}
-	fmt.Println(jwp)
 
 	workout, err := wh.workoutService.CreateWorkout(r.Context(), jwp)
 	if err != nil {
