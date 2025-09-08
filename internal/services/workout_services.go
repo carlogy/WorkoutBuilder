@@ -131,11 +131,30 @@ func (ws *WorkoutService) CreateWorkout(ctx context.Context, wrp WorkoutRequestP
 		return Workout{}, err
 	}
 
-	convertedWO, err := ws.ConvertDBWorkoutToWorkout(dbWO)
+	// think about using helper functions, instead using getWorkoutID service method ...?
+
+	convertedWO, err := ws.GetWorkoutByID(ctx, dbWO.ID)
 	if err != nil {
 		return Workout{}, err
 	}
 
+	return convertedWO, nil
+}
+
+func (ws *WorkoutService) GetWorkoutByID(ctx context.Context, woID id.UUID) (Workout, error) {
+
+	w, err := ws.workoutRepo.GetDBWOByID(ctx, woID)
+	if err != nil {
+		fmt.Println("Error getting workout by ID from repo: ", err)
+		return Workout{}, err
+	}
+
+	convertedWO, err := ws.ConvertDBWorkoutToWorkout(w)
+	if err != nil {
+		return Workout{}, err
+	}
+
+	// to do break out into helper functions
 	woExerciseBlockMap := map[*WorkoutExercise]id.UUID{}
 	woSetExerciseMap := map[Set]id.UUID{}
 

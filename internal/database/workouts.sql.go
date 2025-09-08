@@ -62,72 +62,26 @@ func (q *Queries) DeleteWorkoutByID(ctx context.Context, id uuid.UUID) (Workout,
 	return i, err
 }
 
-const getWorkoutByID = `-- name: GetWorkoutByID :many
+const getWorkoutByID = `-- name: GetWorkoutByID :one
 SELECT
-    workouts.id, workouts.name, workouts.description, workouts.created_at, workouts.modified_at,
-    workout_blocks.id, workout_blocks.ordinal, workout_blocks.workoutid, workout_blocks.restseconds_after_block, workout_blocks.created_at, workout_blocks.modified_at, workout_exercise.id, workout_exercise.ordinal, workout_exercise.workout_blockid, workout_exercise.exerciseid, workout_exercise.notes, workout_exercise.created_at, workout_exercise.modified_at, exercise_sets.id, exercise_sets.workout_exerciseid, exercise_sets.ordinal, exercise_sets.weight, exercise_sets.reps, exercise_sets.static_hold_time, exercise_sets.created_at, exercise_sets.modified_at
-FROM workouts
-JOIN workout_blocks on workout_blocks.workoutid = workouts.id
-JOIN workout_exercise on workout_exercise.workout_blockid = workout_blocks.id
-JOIN exercise_sets  on exercise_sets.workout_exerciseid = workout_exercise.id
-WHERE workouts.id = $1
+    id, name, description, created_at, modified_at
+FROM
+    workouts w
+WHERE
+    w.id = $1
 `
 
-type GetWorkoutByIDRow struct {
-	Workout         Workout
-	WorkoutBlock    WorkoutBlock
-	WorkoutExercise WorkoutExercise
-	ExerciseSet     ExerciseSet
-}
-
-func (q *Queries) GetWorkoutByID(ctx context.Context, id uuid.UUID) ([]GetWorkoutByIDRow, error) {
-	rows, err := q.db.QueryContext(ctx, getWorkoutByID, id)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []GetWorkoutByIDRow
-	for rows.Next() {
-		var i GetWorkoutByIDRow
-		if err := rows.Scan(
-			&i.Workout.ID,
-			&i.Workout.Name,
-			&i.Workout.Description,
-			&i.Workout.CreatedAt,
-			&i.Workout.ModifiedAt,
-			&i.WorkoutBlock.ID,
-			&i.WorkoutBlock.Ordinal,
-			&i.WorkoutBlock.Workoutid,
-			&i.WorkoutBlock.RestsecondsAfterBlock,
-			&i.WorkoutBlock.CreatedAt,
-			&i.WorkoutBlock.ModifiedAt,
-			&i.WorkoutExercise.ID,
-			&i.WorkoutExercise.Ordinal,
-			&i.WorkoutExercise.WorkoutBlockid,
-			&i.WorkoutExercise.Exerciseid,
-			&i.WorkoutExercise.Notes,
-			&i.WorkoutExercise.CreatedAt,
-			&i.WorkoutExercise.ModifiedAt,
-			&i.ExerciseSet.ID,
-			&i.ExerciseSet.WorkoutExerciseid,
-			&i.ExerciseSet.Ordinal,
-			&i.ExerciseSet.Weight,
-			&i.ExerciseSet.Reps,
-			&i.ExerciseSet.StaticHoldTime,
-			&i.ExerciseSet.CreatedAt,
-			&i.ExerciseSet.ModifiedAt,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+func (q *Queries) GetWorkoutByID(ctx context.Context, id uuid.UUID) (Workout, error) {
+	row := q.db.QueryRowContext(ctx, getWorkoutByID, id)
+	var i Workout
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.CreatedAt,
+		&i.ModifiedAt,
+	)
+	return i, err
 }
 
 const getWorkouts = `-- name: GetWorkouts :many

@@ -15,7 +15,7 @@ type WorkoutRepository struct {
 
 type WorkOutRepository interface {
 	CreateDBWO(ctx context.Context, workout *db.CreateWorkOutParams, woBlockSlice []db.CreateWorkoutBlocksParams, woExSlice []db.CreateWorkoutExercisesParams, woExSets []db.CreateExerciseSetsParams) (db.Workout, error)
-	GetWODBById(ctx context.Context, id id.UUID) ([]db.GetWorkoutByIDRow, error)
+	GetDBWOByID(ctx context.Context, id id.UUID) (db.Workout, error)
 	DeleteDBWOById(ctx context.Context, id id.UUID) (db.Workout, error)
 	GetDBWOExByWOID(ctx context.Context, workoutID id.UUID) ([]db.GetWorkoutExercisesByWorkoutIDRow, error)
 	GetDBWOBlocksByWOID(ctx context.Context, woID id.UUID) ([]db.WorkoutBlock, error)
@@ -67,11 +67,11 @@ func (wo *WorkoutRepository) CreateDBWO(ctx context.Context, workout *db.CreateW
 	return dbWO, nil
 }
 
-func (wo *WorkoutRepository) GetWODBById(ctx context.Context, id id.UUID) ([]db.GetWorkoutByIDRow, error) {
+func (wo *WorkoutRepository) GetDBWOByID(ctx context.Context, id id.UUID) (db.Workout, error) {
 
 	dbWO, err := wo.dbQ.GetWorkoutByID(ctx, id)
 	if err != nil {
-		return []db.GetWorkoutByIDRow{}, err
+		return db.Workout{}, err
 	}
 	return dbWO, nil
 }
