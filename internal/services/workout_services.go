@@ -236,6 +236,23 @@ func (ws *WorkoutService) GetWorkoutByID(ctx context.Context, woID id.UUID) (Wor
 	return convertedWO, nil
 }
 
+func (ws *WorkoutService) DeleteWorkoutByID(ctx context.Context, woId id.UUID) (Workout, error) {
+
+	workout, err := ws.GetWorkoutByID(ctx, woId)
+	if err != nil {
+		fmt.Println("Error getting full workout prior to deletion: ", err)
+		return Workout{}, err
+	}
+
+	err = ws.workoutRepo.DeleteDBWOById(ctx, woId)
+	if err != nil {
+		fmt.Println("Error deleting full workout: ", err)
+		return Workout{}, err
+	}
+
+	return workout, nil
+}
+
 func (ws *WorkoutService) ConvertDBWorkoutToWorkout(d db.Workout) (Workout, error) {
 
 	// exercises := make([]WorkoutBlock, 0)

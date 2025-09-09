@@ -87,7 +87,7 @@ func (wh *WorkoutHandler) GetWorkoutById(w http.ResponseWriter, r *http.Request)
 	pathID := r.PathValue("id")
 	wid, err := id.Parse(pathID)
 	if err != nil {
-		http.Error(w, "Erroronous workoutID received", http.StatusInternalServerError)
+		http.Error(w, "Erroronous workoutID received", http.StatusNotFound)
 		fmt.Println("Error parsing string id to uuid: ", err)
 		return
 	}
@@ -118,45 +118,36 @@ func (wh *WorkoutHandler) GetWorkoutById(w http.ResponseWriter, r *http.Request)
 
 func (wh *WorkoutHandler) DeleteWorkoutById(w http.ResponseWriter, r *http.Request) {
 
-	//to do re-implement using service and repositories
+	pathID := r.PathValue("id")
+	woId, err := id.Parse(pathID)
+	if err != nil {
+		http.Error(w, "Erroronous workoutID received", http.StatusInternalServerError)
+		fmt.Println("Error parsing string id to uuid: ", err)
+		return
+	}
 
-	// pathID := r.PathValue("id")
-	// wuuid, err := uuid.Parse(pathID)
-	// if err != nil {
-	// 	http.Error(w, "Erroronous workoutID received", http.StatusInternalServerError)
-	// 	fmt.Println("Error parsing string id to uuid: ", err)
-	// 	return
-	// }
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+		fmt.Println("Error gettting auth token: ", err)
+		return
+	}
 
-	// token, err := auth.GetBearerToken(r.Header)
-	// if err != nil {
-	// 	http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
-	// 	fmt.Println("Error gettting auth token: ", err)
-	// 	return
-	// }
+	_, err = auth.ValidateJWT(token, wh.authService.Secret)
+	if err != nil {
+		http.Error(w, "Invalid Token", http.StatusUnauthorized)
+		fmt.Println("Error validating JWT token: ", err)
+		return
+	}
 
-	// _, err = auth.ValidateJWT(token, wh.conf.secret)
-	// if err != nil {
-	// 	http.Error(w, "Invalid Token", http.StatusUnauthorized)
-	// 	fmt.Println("Error validating JWT token: ", err)
-	// 	return
-	// }
+	workout, err := wh.workoutService.DeleteWorkoutByID(r.Context(), woId)
+	if err != nil {
+		fmt.Println("Error deleting workout record: ", err)
+		http.Error(w, "Internal Server error", 500)
+		return
+	}
 
-	// dbWorkout, err := wh.conf.db.DeleteWorkoutByID(r.Context(), wuuid)
-	// if err != nil {
-	// 	http.Error(w, "Workout not found", http.StatusNotFound)
-	// 	fmt.Println("Error querying db for workout: ", err)
-	// 	return
-	// }
-
-	// convertedWorkout, err := services.ConvertDBWorkoutToWorkout(dbWorkout)
-	// if err != nil {
-	// 	http.Error(w, "Error preparing json response", http.StatusInternalServerError)
-	// 	fmt.Println("Error marshalling db workout to json response ")
-	// 	return
-	// }
-
-	// wh.writeJSONResponse(w, convertedWorkout, http.StatusOK)
+	wh.writeJSONResponse(w, workout, http.StatusOK)
 }
 
 func (wh *WorkoutHandler) GetWorkouts(w http.ResponseWriter, r *http.Request) {

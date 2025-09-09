@@ -16,7 +16,7 @@ type WorkoutRepository struct {
 type WorkOutRepository interface {
 	CreateDBWO(ctx context.Context, workout *db.CreateWorkOutParams, woBlockSlice []db.CreateWorkoutBlocksParams, woExSlice []db.CreateWorkoutExercisesParams, woExSets []db.CreateExerciseSetsParams) (db.Workout, error)
 	GetDBWOByID(ctx context.Context, id id.UUID) (db.Workout, error)
-	DeleteDBWOById(ctx context.Context, id id.UUID) (db.Workout, error)
+	DeleteDBWOById(ctx context.Context, woId id.UUID) error
 	GetDBWOExByWOID(ctx context.Context, workoutID id.UUID) ([]db.GetWorkoutExercisesByWorkoutIDRow, error)
 	GetDBWOBlocksByWOID(ctx context.Context, woID id.UUID) ([]db.WorkoutBlock, error)
 	GetExSetsByWOID(ctx context.Context, exID id.UUID) ([]db.GetExerciseSetsByWorkoutIDRow, error)
@@ -76,8 +76,26 @@ func (wo *WorkoutRepository) GetDBWOByID(ctx context.Context, id id.UUID) (db.Wo
 	return dbWO, nil
 }
 
-func (wo *WorkoutRepository) DeleteDBWOById(ctx context.Context, id id.UUID) (db.Workout, error) {
-	return db.Workout{}, nil
+func (wo *WorkoutRepository) DeleteDBWOById(ctx context.Context, woId id.UUID) error {
+
+	tx, err := wo.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	qtx := wo.dbQ.WithTx(tx)
+
+	_, err = qtx.DeleteWorkoutByID(ctx, woId)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (wo *WorkoutRepository) GetDBWOExByWOID(ctx context.Context, workoutID id.UUID) ([]db.GetWorkoutExercisesByWorkoutIDRow, error) {

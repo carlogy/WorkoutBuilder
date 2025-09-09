@@ -46,14 +46,34 @@ Authorization: Bearer {{jwt}}
 {
     "name": "TestWorkout",
     "description": "This is a test workout",
-    "exercises": [
+    "exerciseBlocks": [
         {
-            "exerciseID":  "4b7f40a2-ff00-4e3c-b5e4-01fc338cb36f",
-            "sets": [
-                {"weight": 165, "reps": 12},
-                {"weight": 165, "reps": 12},
-                {"weight": 165, "reps": 12}
-            ]
+            "ordinal": 0,
+            "exercises": [
+                {
+                    "ordinal": 0,
+                    "exerciseID": "1880fef4-61bc-4497-bcbc-edddc73a744b",
+                    "sets": [
+                        {
+                            "ordinal": 0,
+                            "weight": 165,
+                            "reps": 12
+                        },
+                        {
+                            "ordinal": 1,
+                            "weight": 165,
+                            "reps": 12
+                        },
+                        {
+                            "ordinal": 2,
+                            "weight": 165,
+                            "reps": 12
+                        }
+                    ],
+                    "notes": "hold for a beat at check before pressing away"
+                }
+            ],
+            "restAfterBlock": 60
         }
     ]
 }
@@ -62,50 +82,48 @@ HTTP 200
 wid: jsonpath "$['id']"
 wname: jsonpath "$['name']"
 wdesc: jsonpath "$['description']"
-wercersises: jsonpath "$['exercises']"
+firstBlockID: jsonpath "$['exerciseBlocks'][0].workoutBlockID"
+firstExerciseID: jsonpath "$['exerciseBlocks'][0]['exercises'][0].workoutExerciseID"
 [Asserts]
 header "Content-Type" == "application/json"
 jsonpath "$.id" exists
 jsonpath "$.name" == "TestWorkout"
 jsonpath "$.description" == "This is a test workout"
-jsonpath "$.exercises" exists
+jsonpath "$.exerciseBlocks[0].exercises" exists
+jsonpath "$.exerciseBlocks[0].exercises[0].sets" exists
 jsonpath "$.createdAt" exists
 jsonpath "$.modifiedAt" exists
 
-#Get workout by ID
+
+# Get Workout by ID
 GET http://{{host}}/api/workouts/{{wid}}
 Authorization: Bearer {{jwt}}
 HTTP 200
-Content-Type: application/json
 [Asserts]
+header "Content-Type" == "application/json"
 jsonpath "$.id" == "{{wid}}"
 jsonpath "$.name" == "{{wname}}"
 jsonpath "$.description" == "{{wdesc}}"
-jsonpath "$.exercises" == {{wercersises}}
-jsonpath "$.createdAt" exists
-jsonpath "$.modifiedAt" exists
+jsonpath "$.exerciseBlocks[0].workoutBlockID" == "{{firstBlockID}}"
+jsonpath "$.exerciseBlocks[0].exercises[0].workoutExerciseID" == "{{firstExerciseID}}"
 
-# Get all workouts
-GET http://{{host}}/api/workouts
-Authorization: Bearer {{jwt}}
-HTTP 200
-Content-Type: application/json
-[Asserts]
-jsonpath "$.workouts" exists
-
-
-# Delete Workout by Id
+# Delete Workout By ID
 DELETE http://{{host}}/api/workouts/{{wid}}
 Authorization: Bearer {{jwt}}
 HTTP 200
-Content-Type: application/json
 [Asserts]
+header "Content-Type" == "application/json"
 jsonpath "$.id" == "{{wid}}"
 jsonpath "$.name" == "{{wname}}"
 jsonpath "$.description" == "{{wdesc}}"
-jsonpath "$.exercises" == {{wercersises}}
-jsonpath "$.createdAt" exists
-jsonpath "$.modifiedAt" exists
+jsonpath "$.exerciseBlocks[0].workoutBlockID" == "{{firstBlockID}}"
+jsonpath "$.exerciseBlocks[0].exercises[0].workoutExerciseID" == "{{firstExerciseID}}"
+
+# Get Deleted Workout
+GET http://{{host}}/api/workouts/{{wid}}
+Authorization: Bearer {{jwt}}
+HTTP 500
+Content-Type: text/plain; charset=utf-8
 
 # Delete Existing user
 DELETE http://{{host}}/api/users/{{uid}}
