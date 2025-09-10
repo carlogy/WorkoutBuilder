@@ -1,14 +1,14 @@
 -- name: CreateExercise :one
-INSERT INTO exercises (id, name, exercise_type, equipment, primary_muscle_groups,secondary_muscle_groups, description, created_at, modified_at
+INSERT INTO exercises (id, name, exercise_type, equipment, description, has_primary_muscles, has_secondary_muscles, created_at, modified_at
 )
 VALUES (
-    gen_random_uuid(),
     $1,
     $2,
     $3,
     $4,
     $5,
     $6,
+    $7,
     NOW(),
     NOW()
 )
@@ -26,9 +26,18 @@ SELECT
 FROM
     exercises e
 WHERE
-    e.id = $1 LIMIT 1;
+    e.id = $1
+LIMIT 1;
 
 -- name: DeleteExerciseById :one
 DELETE FROM exercises e
 WHERE e.id = $1
 RETURNING *;
+
+-- name: CheckExerciseExists :one
+SELECT EXISTS (
+SELECT 1
+FROM
+    exercises
+WHERE name = $1
+);

@@ -80,3 +80,10 @@ func NullBoolToBool(b sql.NullBool) bool {
 	}
 	return false
 }
+
+func NoneNullBoolToNullBull(b bool) sql.NullBool {
+	return sql.NullBool{
+		Bool:  b,
+		Valid: true,
+	}
+}

@@ -1,5 +1,5 @@
 -- +goose UP
-CREATE TABLE exercise_muscle_Groups (
+CREATE TABLE exercise_muscle_groups (
     id SERIAL PRIMARY KEY,
     exercise_ID UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
     muscle_groups_ID UUID NOT NULL REFERENCES muscle_groups(id),
@@ -10,4 +10,4 @@ CREATE TABLE exercise_muscle_Groups (
 );
 
 -- +goose Down
-DROP TABLE exercise_muscleGroups;
+DROP TABLE exercise_muscle_Groups;

@@ -15,7 +15,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	ah := handlers.NewAuthHandler(*services.NewAuthService(*repositories.NewAuthRepository(s.Config.Queries), s.SecretKey))
 
-	eh := handlers.NewExerciseHandler(s.ApiConfig)
+	eh := handlers.NewExerciseHandler(*services.NewExerciseService(*repositories.NewExerciseRepository(s.Config.Queries, s.Config.db), s.SecretKey), *ah.AuthService)
 
 	uh := handlers.NewUserHandler(*services.NewUserService(*repositories.NewUserRepository(s.Config.Queries), s.SecretKey), *ah.AuthService)
 

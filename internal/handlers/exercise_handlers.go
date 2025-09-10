@@ -5,26 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
-	"github.com/carlogy/WorkoutBuilder/internal/database"
-
+	"github.com/carlogy/WorkoutBuilder/internal/auth"
 	services "github.com/carlogy/WorkoutBuilder/internal/services"
 )
 
 type ExerciseHandler struct {
-	conf *ApiConfig
+	exerciseService *services.ExerciseService
+	authService     *services.AuthService
 }
 
-func NewExerciseHandler(c *ApiConfig) ExerciseHandler {
-	eh := ExerciseHandler{conf: c}
-	return eh
-}
-
-func (eh *ExerciseHandler) GetExerciseType(t services.ExerciseType) string {
-
-	exerciseType := strconv.Itoa(int(t))
-	return exerciseType
+func NewExerciseHandler(es services.ExerciseService, as services.AuthService) ExerciseHandler {
+	return ExerciseHandler{exerciseService: &es, authService: &as}
 }
 
 func (eh *ExerciseHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -49,33 +41,32 @@ func (eh *ExerciseHandler) writeJSONResponse(w http.ResponseWriter, data interfa
 
 func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request) {
 
-	type jsonExercise struct {
-		Name                  string            `json:"name"`
-		ExerciseType          int               `json:"exerciseType"`
-		Equipment             string            `json:"equipment"`
-		PrimaryMuscleGroups   map[string]string `json:"primaryMuscleGroups"`
-		SecondaryMuscleGroups map[string]string `json:"secondaryMuscleGroups"`
-		Description           *string           `json:"description"`
-	}
-
-	body := jsonExercise{}
-	decoder := json.NewDecoder(r.Body)
-	err := decoder.Decode(&body)
+	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
-		w.WriteHeader(500)
-		fmt.Println(err)
+		http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+		fmt.Println("Error gettting auth token: ", err)
 		return
 	}
 
-	ex, err := eh.conf.db.CreateExercise(r.Context(), database.CreateExerciseParams{
-		Name:                  body.Name,
-		ExerciseType:          eh.GetExerciseType(services.ExerciseType(body.ExerciseType)),
-		Equipment:             body.Equipment,
-		PrimaryMuscleGroups:   services.ConvertMapToRawJSON(body.PrimaryMuscleGroups),
-		SecondaryMuscleGroups: services.ConvertMapToRawJSON(body.SecondaryMuscleGroups),
-		Description:           services.NoneNullToNullString(body.Description),
-	},
-	)
+	_, err = auth.ValidateJWT(token, eh.authService.Secret)
+	if err != nil {
+		http.Error(w, "Invalid Token", http.StatusUnauthorized)
+		fmt.Println("Error validating JWT token: ", err)
+		return
+	}
+
+	jep := services.ExerciseRequestParams{}
+	decoder := json.NewDecoder(r.Body)
+	err = decoder.Decode(&jep)
+	if err != nil {
+		http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+		fmt.Println("Error decoing request body: ", err)
+		return
+	}
+
+	// fmt.Println(jep)
+
+	ex, err := eh.exerciseService.CreateExercise(r.Context(), jep)
 
 	if err != nil {
 		if err.Error() == "pq: duplicate key value violates unique constraint \"unique_exercise_name\"" {
@@ -83,94 +74,103 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 			fmt.Println("Exercise already created: ", err)
 			return
 		}
+		if err.Error() == "exercise already exists" {
+			http.Error(w, err.Error(), http.StatusConflict)
+			return
+		}
 		w.WriteHeader(500)
 		fmt.Println(err.Error())
 		return
 	}
 
-	createdExcercise := services.ConvertDBexerciseToExercise(ex)
-
-	eh.writeJSONResponse(w, createdExcercise, http.StatusOK)
+	eh.writeJSONResponse(w, ex, http.StatusOK)
 }
 
 func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) {
 
-	exerciseList, err := eh.conf.db.GetExercises(r.Context())
-	if err != nil {
-		http.Error(w, "Error: getting exercises", 500)
-		fmt.Printf("Error querying for exercises: %v", err)
-		return
+	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
 
-	}
+	// exerciseList, err := eh.conf.db.GetExercises(r.Context())
+	// if err != nil {
+	// 	http.Error(w, "Error: getting exercises", 500)
+	// 	fmt.Printf("Error querying for exercises: %v", err)
+	// 	return
 
-	type jsonBodyResp struct {
-		Exercises []services.Exercise `json:"exercises"`
-		Total     int                 `json:"total"`
-	}
+	// }
 
-	updatedExerciseList := make([]services.Exercise, 0)
-	for _, e := range exerciseList {
-		exercise := services.ConvertDBexerciseToExercise(e)
-		updatedExerciseList = append(updatedExerciseList, exercise)
-	}
-	jbr := jsonBodyResp{Exercises: updatedExerciseList, Total: len(updatedExerciseList)}
+	// type jsonBodyResp struct {
+	// 	Exercises []services.Exercise `json:"exercises"`
+	// 	Total     int                 `json:"total"`
+	// }
 
-	eh.writeJSONResponse(w, jbr, 200)
+	// updatedExerciseList := make([]services.Exercise, 0)
+	// for _, e := range exerciseList {
+	// 	exercise := services.ConvertDBexerciseToExercise(e)
+	// 	updatedExerciseList = append(updatedExerciseList, exercise)
+	// }
+	// jbr := jsonBodyResp{Exercises: updatedExerciseList, Total: len(updatedExerciseList)}
+
+	// eh.writeJSONResponse(w, jbr, 200)
 
 }
 
 func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Request) {
 
-	id := r.PathValue("id")
-	if id == "" {
+	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
 
-		http.Error(w, "Error: getting path value", 500)
-		fmt.Printf("Id string received:\t%v", id)
-		return
-	}
+	// id := r.PathValue("id")
+	// if id == "" {
 
-	uuid, err := services.ConvertStringToUUID(id)
-	if err != nil {
-		http.Error(w, "Invalid id passed", 500)
-		fmt.Println("Error converting pathVal to UUID", err)
-		return
-	}
+	// 	http.Error(w, "Error: getting path value", 500)
+	// 	fmt.Printf("Id string received:\t%v", id)
+	// 	return
+	// }
 
-	dbEx, err := eh.conf.db.GetExerciseById(r.Context(), uuid)
-	if err != nil {
-		http.Error(w, "Error: Exercise does not exist", 500)
-		fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
-		return
-	}
+	// uuid, err := services.ConvertStringToUUID(id)
+	// if err != nil {
+	// 	http.Error(w, "Invalid id passed", 500)
+	// 	fmt.Println("Error converting pathVal to UUID", err)
+	// 	return
+	// }
 
-	exercise := services.ConvertDBexerciseToExercise(dbEx)
+	// dbEx, err := eh.conf.db.GetExerciseById(r.Context(), uuid)
+	// if err != nil {
+	// 	http.Error(w, "Error: Exercise does not exist", 500)
+	// 	fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
+	// 	return
+	// }
 
-	eh.writeJSONResponse(w, exercise, 200)
+	// exercise := services.ConvertDBexerciseToExercise(dbEx)
+
+	// eh.writeJSONResponse(w, exercise, 200)
 }
 
 func (eh *ExerciseHandler) DeleteExerciseByID(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id")
-	if id == "" {
-		http.Error(w, "Must provide exercise Id to delete", 500)
-		fmt.Println("Invalid id passed:\t", id)
-		return
-	}
 
-	uuid, err := services.ConvertStringToUUID(id)
-	if err != nil {
-		http.Error(w, "Invalid id passed", 500)
-		fmt.Println("Error converting pathVal to UUID", err)
-		return
-	}
+	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
 
-	deletedEx, err := eh.conf.db.DeleteExerciseById(r.Context(), uuid)
-	if err != nil {
-		http.Error(w, "Exercise not found", 404)
-		fmt.Printf("Experienced err while deleting exercise:\t%v\n", err)
-		return
-	}
+	// id := r.PathValue("id")
+	// if id == "" {
+	// 	http.Error(w, "Must provide exercise Id to delete", 500)
+	// 	fmt.Println("Invalid id passed:\t", id)
+	// 	return
+	// }
 
-	ex := services.ConvertDBexerciseToExercise(deletedEx)
+	// uuid, err := services.ConvertStringToUUID(id)
+	// if err != nil {
+	// 	http.Error(w, "Invalid id passed", 500)
+	// 	fmt.Println("Error converting pathVal to UUID", err)
+	// 	return
+	// }
 
-	eh.writeJSONResponse(w, ex, 200)
+	// deletedEx, err := eh.conf.db.DeleteExerciseById(r.Context(), uuid)
+	// if err != nil {
+	// 	http.Error(w, "Exercise not found", 404)
+	// 	fmt.Printf("Experienced err while deleting exercise:\t%v\n", err)
+	// 	return
+	// }
+
+	// ex := services.ConvertDBexerciseToExercise(deletedEx)
+
+	// eh.writeJSONResponse(w, ex, 200)
 }
