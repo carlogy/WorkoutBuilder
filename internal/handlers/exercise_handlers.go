@@ -8,6 +8,7 @@ import (
 
 	"github.com/carlogy/WorkoutBuilder/internal/auth"
 	services "github.com/carlogy/WorkoutBuilder/internal/services"
+	id "github.com/google/uuid"
 )
 
 type ExerciseHandler struct {
@@ -64,8 +65,6 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// fmt.Println(jep)
-
 	ex, err := eh.exerciseService.CreateExercise(r.Context(), jep)
 
 	if err != nil {
@@ -84,6 +83,40 @@ func (eh *ExerciseHandler) CreateExercise(w http.ResponseWriter, r *http.Request
 	}
 
 	eh.writeJSONResponse(w, ex, http.StatusOK)
+}
+
+func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Request) {
+
+	pathID := r.PathValue("id")
+	exID, err := id.Parse(pathID)
+	if err != nil {
+		http.Error(w, "Erroronous workoutID received", http.StatusNotFound)
+		fmt.Println("Error parsing string id to uuid: ", err)
+		return
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+		fmt.Println("Error gettting auth token: ", err)
+		return
+	}
+
+	_, err = auth.ValidateJWT(token, eh.authService.Secret)
+	if err != nil {
+		http.Error(w, "Invalid Token", http.StatusUnauthorized)
+		fmt.Println("Error validating JWT token: ", err)
+		return
+	}
+
+	e, err := eh.exerciseService.GetFullExerciseByID(r.Context(), exID)
+	if err != nil {
+		http.Error(w, "Error: Exercise does not exist", 500)
+		fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
+		return
+	}
+
+	eh.writeJSONResponse(w, e, 200)
 }
 
 func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) {
@@ -112,37 +145,6 @@ func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) 
 
 	// eh.writeJSONResponse(w, jbr, 200)
 
-}
-
-func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Request) {
-
-	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
-
-	// id := r.PathValue("id")
-	// if id == "" {
-
-	// 	http.Error(w, "Error: getting path value", 500)
-	// 	fmt.Printf("Id string received:\t%v", id)
-	// 	return
-	// }
-
-	// uuid, err := services.ConvertStringToUUID(id)
-	// if err != nil {
-	// 	http.Error(w, "Invalid id passed", 500)
-	// 	fmt.Println("Error converting pathVal to UUID", err)
-	// 	return
-	// }
-
-	// dbEx, err := eh.conf.db.GetExerciseById(r.Context(), uuid)
-	// if err != nil {
-	// 	http.Error(w, "Error: Exercise does not exist", 500)
-	// 	fmt.Printf("Experienced error when querying db for exercise: \t%v\n", err)
-	// 	return
-	// }
-
-	// exercise := services.ConvertDBexerciseToExercise(dbEx)
-
-	// eh.writeJSONResponse(w, exercise, 200)
 }
 
 func (eh *ExerciseHandler) DeleteExerciseByID(w http.ResponseWriter, r *http.Request) {

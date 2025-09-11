@@ -160,19 +160,36 @@ func (es *ExerciseService) CreateExercise(ctx context.Context, erp ExerciseReque
 		return Exercise{}, err
 	}
 
-	//To do: query all items and return constructed created entities
-
-	fullExercise := Exercise{
-		ID:           createdExercise.ID,
-		Name:         createdExercise.Name,
-		ExerciseType: ExerciseType(createdExercise.ExerciseType),
-		Equipment:    createdExercise.Equipment,
-		Description:  NullStringToString(createdExercise.Description),
-		CreatedAt:    NullTimeToTime(createdExercise.CreatedAt),
-		ModifiedAt:   NullTimeToTime(createdExercise.ModifiedAt),
+	fullExercise, err := es.GetFullExerciseByID(ctx, createdExercise.ID)
+	if err != nil {
+		fmt.Println("Error getting full exercise from repo: ", err)
+		return Exercise{}, err
 	}
 
-	exMuscleGroups, err := es.exerciseRepo.GetMuscleGroupsByExerciseID(ctx, createdExercise.ID)
+	return fullExercise, nil
+}
+
+func (es *ExerciseService) GetFullExerciseByID(ctx context.Context, exId id.UUID) (Exercise, error) {
+
+	dbExercise, err := es.exerciseRepo.GetExerciseByID(ctx, exId)
+	if err != nil {
+		fmt.Println("Error getting exercise from repo: ", err)
+		return Exercise{}, err
+	}
+
+	// to do: consider adding the getMuscleGroups to repo call
+
+	fullExercise := Exercise{
+		ID:           dbExercise.ID,
+		Name:         dbExercise.Name,
+		ExerciseType: ExerciseType(dbExercise.ExerciseType),
+		Equipment:    dbExercise.Equipment,
+		Description:  NullStringToString(dbExercise.Description),
+		CreatedAt:    NullTimeToTime(dbExercise.CreatedAt),
+		ModifiedAt:   NullTimeToTime(dbExercise.ModifiedAt),
+	}
+
+	exMuscleGroups, err := es.exerciseRepo.GetMuscleGroupsByExerciseID(ctx, dbExercise.ID)
 	if err != nil {
 		fmt.Println("Error getting muscle groups by exerciseID: ", err)
 	}
@@ -193,14 +210,7 @@ func (es *ExerciseService) CreateExercise(ctx context.Context, erp ExerciseReque
 		}
 	}
 
-	fmt.Println(fullExercise)
-
 	return fullExercise, nil
-}
-
-func (es *ExerciseService) GetFullExerciseByID(ctx context.Context, exId string) {
-
-	// TO do query and construct Full exercise
 }
 
 func (es *ExerciseService) isValidExerciseType(t ExerciseType) bool {
