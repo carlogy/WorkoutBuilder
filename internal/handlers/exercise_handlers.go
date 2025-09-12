@@ -149,30 +149,34 @@ func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) 
 
 func (eh *ExerciseHandler) DeleteExerciseByID(w http.ResponseWriter, r *http.Request) {
 
-	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
+	pathID := r.PathValue("id")
+	exID, err := id.Parse(pathID)
+	if err != nil {
+		http.Error(w, "Erroronous workoutID received", http.StatusNotFound)
+		fmt.Println("Error parsing string id to uuid: ", err)
+		return
+	}
 
-	// id := r.PathValue("id")
-	// if id == "" {
-	// 	http.Error(w, "Must provide exercise Id to delete", 500)
-	// 	fmt.Println("Invalid id passed:\t", id)
-	// 	return
-	// }
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+		fmt.Println("Error gettting auth token: ", err)
+		return
+	}
 
-	// uuid, err := services.ConvertStringToUUID(id)
-	// if err != nil {
-	// 	http.Error(w, "Invalid id passed", 500)
-	// 	fmt.Println("Error converting pathVal to UUID", err)
-	// 	return
-	// }
+	_, err = auth.ValidateJWT(token, eh.authService.Secret)
+	if err != nil {
+		http.Error(w, "Invalid Token", http.StatusUnauthorized)
+		fmt.Println("Error validating JWT token: ", err)
+		return
+	}
 
-	// deletedEx, err := eh.conf.db.DeleteExerciseById(r.Context(), uuid)
-	// if err != nil {
-	// 	http.Error(w, "Exercise not found", 404)
-	// 	fmt.Printf("Experienced err while deleting exercise:\t%v\n", err)
-	// 	return
-	// }
+	deletedEx, err := eh.exerciseService.DeleteExerciseByID(r.Context(), exID)
+	if err != nil {
+		http.Error(w, "Exercise not found", http.StatusNotFound)
+		fmt.Printf("Experienced err while service deleted exercise:\t%v\n", err)
+		return
+	}
 
-	// ex := services.ConvertDBexerciseToExercise(deletedEx)
-
-	// eh.writeJSONResponse(w, ex, 200)
+	eh.writeJSONResponse(w, deletedEx, 200)
 }

@@ -17,6 +17,7 @@ type ExerciseRepository struct {
 type ExercisesRepository interface {
 	CreateDBExercise(ctx context.Context, exParams db.CreateExerciseParams) (db.Exercise, error)
 	GetExerciseByID(ctx context.Context, id id.UUID) (db.Exercise, error)
+	DeleteExerciseByID(ctx context.Context, exID id.UUID) (db.Exercise, error)
 	GetMuscleGroupByName(ctx context.Context, name string) db.MuscleGroup
 	CheckExerciseExists(ctx context.Context, name string) (bool, error)
 	GetMuscleGroupsByExerciseID(ctx context.Context, exId id.UUID) ([]db.GetMuscleGroupsByExerciseIDRow, error)
@@ -72,6 +73,10 @@ func (er *ExerciseRepository) CreateDBExercise(ctx context.Context, exParams db.
 
 func (er *ExerciseRepository) GetExerciseByID(ctx context.Context, id id.UUID) (db.Exercise, error) {
 	return er.dbQ.GetExerciseById(ctx, id)
+}
+
+func (er *ExerciseRepository) DeleteExerciseByID(ctx context.Context, exID id.UUID) (db.Exercise, error) {
+	return er.dbQ.DeleteExerciseById(ctx, exID)
 }
 
 func (er *ExerciseRepository) GetMuscleGroupByName(ctx context.Context, name string) (db.MuscleGroup, error) {

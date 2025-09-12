@@ -233,21 +233,70 @@ func (es *ExerciseService) getExerciseType(t ExerciseType) string {
 	return "WeightedReps"
 }
 
-func (es *ExerciseService) ConvertDBexerciseToExercise(e db.Exercise) Exercise {
-	exercise := Exercise{
-		ID:           e.ID,
-		Name:         e.Name,
-		ExerciseType: ExerciseType(es.getExerciseType(ExerciseType(e.ExerciseType))),
-		Equipment:    e.Equipment,
-		// PrimaryMuscleGroups:   ConvertRawJSONTOMap[string](e.HasPrimaryMuscles),
-		// SecondaryMuscleGroups: ConvertRawJSONTOMap[string](e.SecondaryMuscleGroups),
-		Description: NullStringToString(e.Description),
-		CreatedAt:   NullTimeToTime(e.CreatedAt),
-		ModifiedAt:  NullTimeToTime(e.ModifiedAt),
+func (es *ExerciseService) DeleteExerciseByID(ctx context.Context, exID id.UUID) (Exercise, error) {
+
+	//To Do: Clean this up, works but it's ugly
+	dbExercise, err := es.exerciseRepo.GetExerciseByID(ctx, exID)
+	if err != nil {
+		fmt.Println("Error getting exercise before deletion: ", err)
 	}
 
-	return exercise
+	fullExercise := Exercise{
+		ID:           dbExercise.ID,
+		Name:         dbExercise.Name,
+		ExerciseType: ExerciseType(dbExercise.ExerciseType),
+		Equipment:    dbExercise.Equipment,
+		Description:  NullStringToString(dbExercise.Description),
+		CreatedAt:    NullTimeToTime(dbExercise.CreatedAt),
+		ModifiedAt:   NullTimeToTime(dbExercise.ModifiedAt),
+	}
+
+	exMuscleGroups, err := es.exerciseRepo.GetMuscleGroupsByExerciseID(ctx, dbExercise.ID)
+	if err != nil {
+		fmt.Println("Error getting muscle groups by exerciseID: ", err)
+	}
+
+	for _, muscleGroup := range exMuscleGroups {
+
+		if NullBoolToBool(muscleGroup.ExerciseMuscleGroup.PrimaryMuscle) {
+			fullExercise.PrimaryMuscleGroups = append(fullExercise.PrimaryMuscleGroups, MuscleGroups{ID: muscleGroup.MuscleGroup.ID, BodyPart: muscleGroup.MuscleGroup.BodyPart, MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup, MuscleName: muscleGroup.MuscleGroup.MuscleName, CreatedAt: NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
+				ModifiedAt: NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt),
+			})
+			continue
+		}
+
+		if NullBoolToBool(muscleGroup.ExerciseMuscleGroup.SecondaryMuscle) {
+			fullExercise.SecondaryMuscleGroups = append(fullExercise.SecondaryMuscleGroups,
+				MuscleGroups{ID: muscleGroup.MuscleGroup.ID, BodyPart: muscleGroup.MuscleGroup.BodyPart, MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup, MuscleName: muscleGroup.MuscleGroup.MuscleName, CreatedAt: NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
+					ModifiedAt: NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt)})
+		}
+	}
+
+	_, err = es.exerciseRepo.DeleteExerciseByID(ctx, exID)
+	if err != nil {
+		fmt.Println("Error from repo deleting exercise: ", err)
+		return Exercise{}, err
+	}
+
+	return fullExercise, nil
+
 }
+
+// func (es *ExerciseService) ConvertDBexerciseToExercise(e db.Exercise) Exercise {
+// 	exercise := Exercise{
+// 		ID:           e.ID,
+// 		Name:         e.Name,
+// 		ExerciseType: ExerciseType(es.getExerciseType(ExerciseType(e.ExerciseType))),
+// 		Equipment:    e.Equipment,
+// 		// PrimaryMuscleGroups:   ConvertRawJSONTOMap[string](e.HasPrimaryMuscles),
+// 		// SecondaryMuscleGroups: ConvertRawJSONTOMap[string](e.SecondaryMuscleGroups),
+// 		Description: NullStringToString(e.Description),
+// 		CreatedAt:   NullTimeToTime(e.CreatedAt),
+// 		ModifiedAt:  NullTimeToTime(e.ModifiedAt),
+// 	}
+
+// 	return exercise
+// }
 
 // func ConvertStringToUUID(s string) (id.UUID, error) {
 // 	err := id.Validate(s)
