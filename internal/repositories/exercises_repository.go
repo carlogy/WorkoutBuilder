@@ -15,12 +15,14 @@ type ExerciseRepository struct {
 }
 
 type ExercisesRepository interface {
-	CreateDBExercise(ctx context.Context, exParams db.CreateExerciseParams) (db.Exercise, error)
+	CreateDBExercise(ctx context.Context, exParams db.CreateExerciseParams, muscleGroupSlice []db.CreateMuscleGroupParams, exMusGroupSlice []db.CreateExerciseMuscleGroupsParams)
 	GetExerciseByID(ctx context.Context, id id.UUID) (db.Exercise, error)
 	DeleteExerciseByID(ctx context.Context, exID id.UUID) (db.Exercise, error)
 	GetMuscleGroupByName(ctx context.Context, name string) db.MuscleGroup
 	CheckExerciseExists(ctx context.Context, name string) (bool, error)
 	GetMuscleGroupsByExerciseID(ctx context.Context, exId id.UUID) ([]db.GetMuscleGroupsByExerciseIDRow, error)
+	GetAllMuscleGroupsExercises(ctx context.Context)
+	GetAllDBExercises(ctx context.Context) ([]db.Exercise, error)
 }
 
 func NewExerciseRepository(dbq *db.Queries, db *sql.DB) *ExerciseRepository {
@@ -94,4 +96,12 @@ func (er *ExerciseRepository) CheckExerciseExists(ctx context.Context, name stri
 
 func (er *ExerciseRepository) GetMuscleGroupsByExerciseID(ctx context.Context, exId id.UUID) ([]db.GetMuscleGroupsByExerciseIDRow, error) {
 	return er.dbQ.GetMuscleGroupsByExerciseID(ctx, exId)
+}
+
+func (er *ExerciseRepository) GetAllMuscleGroupsExercises(ctx context.Context) ([]db.GetMuscleGroupsForAllExercisesRow, error) {
+	return er.dbQ.GetMuscleGroupsForAllExercises(ctx)
+}
+
+func (er *ExerciseRepository) GetAllDBExercises(ctx context.Context) ([]db.Exercise, error) {
+	return er.dbQ.GetExercises(ctx)
 }

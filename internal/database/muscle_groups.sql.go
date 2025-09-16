@@ -125,3 +125,55 @@ func (q *Queries) GetMuscleGroupsByExerciseID(ctx context.Context, exerciseID uu
 	}
 	return items, nil
 }
+
+const getMuscleGroupsForAllExercises = `-- name: GetMuscleGroupsForAllExercises :many
+Select
+     mg.id, mg.body_part, mg.muscle_group, mg.muscle_name, mg.created_at, mg.modified_at, emg.id, emg.exercise_id, emg.muscle_groups_id, emg.primary_muscle, emg.secondary_muscle, emg.created_at, emg.modified_at
+FROM
+    muscle_groups mg
+JOIN exercise_muscle_groups emg
+    ON emg.muscle_groups_id = mg.id
+ORDER BY emg.primary_muscle, emg.secondary_muscle
+`
+
+type GetMuscleGroupsForAllExercisesRow struct {
+	MuscleGroup         MuscleGroup
+	ExerciseMuscleGroup ExerciseMuscleGroup
+}
+
+func (q *Queries) GetMuscleGroupsForAllExercises(ctx context.Context) ([]GetMuscleGroupsForAllExercisesRow, error) {
+	rows, err := q.db.QueryContext(ctx, getMuscleGroupsForAllExercises)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetMuscleGroupsForAllExercisesRow
+	for rows.Next() {
+		var i GetMuscleGroupsForAllExercisesRow
+		if err := rows.Scan(
+			&i.MuscleGroup.ID,
+			&i.MuscleGroup.BodyPart,
+			&i.MuscleGroup.MuscleGroup,
+			&i.MuscleGroup.MuscleName,
+			&i.MuscleGroup.CreatedAt,
+			&i.MuscleGroup.ModifiedAt,
+			&i.ExerciseMuscleGroup.ID,
+			&i.ExerciseMuscleGroup.ExerciseID,
+			&i.ExerciseMuscleGroup.MuscleGroupsID,
+			&i.ExerciseMuscleGroup.PrimaryMuscle,
+			&i.ExerciseMuscleGroup.SecondaryMuscle,
+			&i.ExerciseMuscleGroup.CreatedAt,
+			&i.ExerciseMuscleGroup.ModifiedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}

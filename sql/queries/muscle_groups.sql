@@ -27,3 +27,12 @@ JOIN exercise_muscle_groups emg
 WHERE
     emg.exercise_id = $1
 ORDER BY emg.primary_muscle, emg.secondary_muscle;
+
+-- name: GetMuscleGroupsForAllExercises :many
+Select
+     sqlc.embed(mg), sqlc.embed(emg)
+FROM
+    muscle_groups mg
+JOIN exercise_muscle_groups emg
+    ON emg.muscle_groups_id = mg.id
+ORDER BY emg.primary_muscle, emg.secondary_muscle;

@@ -121,29 +121,28 @@ func (eh *ExerciseHandler) GetExerciseById(w http.ResponseWriter, r *http.Reques
 
 func (eh *ExerciseHandler) GetExercises(w http.ResponseWriter, r *http.Request) {
 
-	//To Do: refactor using handler, service, repository implementation and normalizaion of tables
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		http.Error(w, "Invalid Bearer Token", http.StatusUnauthorized)
+		fmt.Println("Error gettting auth token: ", err)
+		return
+	}
 
-	// exerciseList, err := eh.conf.db.GetExercises(r.Context())
-	// if err != nil {
-	// 	http.Error(w, "Error: getting exercises", 500)
-	// 	fmt.Printf("Error querying for exercises: %v", err)
-	// 	return
+	_, err = auth.ValidateJWT(token, eh.authService.Secret)
+	if err != nil {
+		http.Error(w, "Invalid Token", http.StatusUnauthorized)
+		fmt.Println("Error validating JWT token: ", err)
+		return
+	}
 
-	// }
+	exList, err := eh.exerciseService.GetAllExercises(r.Context())
+	if err != nil {
+		fmt.Println("Error getting list of exercises from service: ", err)
+		http.Error(w, "Error getting list of exercises", http.StatusInternalServerError)
+		return
+	}
 
-	// type jsonBodyResp struct {
-	// 	Exercises []services.Exercise `json:"exercises"`
-	// 	Total     int                 `json:"total"`
-	// }
-
-	// updatedExerciseList := make([]services.Exercise, 0)
-	// for _, e := range exerciseList {
-	// 	exercise := services.ConvertDBexerciseToExercise(e)
-	// 	updatedExerciseList = append(updatedExerciseList, exercise)
-	// }
-	// jbr := jsonBodyResp{Exercises: updatedExerciseList, Total: len(updatedExerciseList)}
-
-	// eh.writeJSONResponse(w, jbr, 200)
+	eh.writeJSONResponse(w, exList, 200)
 
 }
 

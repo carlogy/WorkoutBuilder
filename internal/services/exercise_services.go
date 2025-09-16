@@ -30,7 +30,7 @@ type Exercise struct {
 	ExerciseType          ExerciseType   `json:"exerciseType"`
 	Equipment             string         `json:"equipment"`
 	PrimaryMuscleGroups   []MuscleGroups `json:"primaryMuscleGroups"`
-	SecondaryMuscleGroups []MuscleGroups `json:"secondaryMuscleGoups"`
+	SecondaryMuscleGroups []MuscleGroups `json:"secondaryMuscleGroups"`
 	Description           *string        `json:"description"`
 	CreatedAt             *time.Time     `json:"createdAt,omitempty"`
 	ModifiedAt            *time.Time     `json:"modifiedAt,omitempty"`
@@ -195,19 +195,34 @@ func (es *ExerciseService) GetFullExerciseByID(ctx context.Context, exId id.UUID
 	}
 
 	for _, muscleGroup := range exMuscleGroups {
+		primaryMuscle := NullBoolToBool(muscleGroup.ExerciseMuscleGroup.PrimaryMuscle)
+		secondaryMuscle := NullBoolToBool(muscleGroup.ExerciseMuscleGroup.SecondaryMuscle)
 
-		if NullBoolToBool(muscleGroup.ExerciseMuscleGroup.PrimaryMuscle) {
-			fullExercise.PrimaryMuscleGroups = append(fullExercise.PrimaryMuscleGroups, MuscleGroups{ID: muscleGroup.MuscleGroup.ID, BodyPart: muscleGroup.MuscleGroup.BodyPart, MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup, MuscleName: muscleGroup.MuscleGroup.MuscleName, CreatedAt: NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
-				ModifiedAt: NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt),
-			})
+		if primaryMuscle && !secondaryMuscle {
+			fullExercise.PrimaryMuscleGroups = append(fullExercise.PrimaryMuscleGroups,
+				MuscleGroups{
+					ID:          muscleGroup.MuscleGroup.ID,
+					BodyPart:    muscleGroup.MuscleGroup.BodyPart,
+					MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup,
+					MuscleName:  muscleGroup.MuscleGroup.MuscleName,
+					CreatedAt:   NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
+					ModifiedAt:  NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt),
+				})
 			continue
 		}
 
-		if NullBoolToBool(muscleGroup.ExerciseMuscleGroup.SecondaryMuscle) {
+		if secondaryMuscle && !primaryMuscle {
 			fullExercise.SecondaryMuscleGroups = append(fullExercise.SecondaryMuscleGroups,
-				MuscleGroups{ID: muscleGroup.MuscleGroup.ID, BodyPart: muscleGroup.MuscleGroup.BodyPart, MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup, MuscleName: muscleGroup.MuscleGroup.MuscleName, CreatedAt: NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
-					ModifiedAt: NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt)})
+				MuscleGroups{
+					ID:          muscleGroup.MuscleGroup.ID,
+					BodyPart:    muscleGroup.MuscleGroup.BodyPart,
+					MuscleGroup: muscleGroup.MuscleGroup.MuscleGroup,
+					MuscleName:  muscleGroup.MuscleGroup.MuscleName,
+					CreatedAt:   NullTimeToTime(muscleGroup.MuscleGroup.CreatedAt),
+					ModifiedAt:  NullTimeToTime(muscleGroup.MuscleGroup.ModifiedAt),
+				})
 		}
+		continue
 	}
 
 	return fullExercise, nil
@@ -279,7 +294,82 @@ func (es *ExerciseService) DeleteExerciseByID(ctx context.Context, exID id.UUID)
 	}
 
 	return fullExercise, nil
+}
 
+func (es *ExerciseService) GetAllExercises(ctx context.Context) ([]Exercise, error) {
+
+	dbEXSlice, err := es.exerciseRepo.GetAllDBExercises(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	dbMGEXSlice, err := es.exerciseRepo.GetAllMuscleGroupsExercises(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// TO DO make hashmap exmg:mg
+	exMGMap := make(map[ExerciseMuscleGroups]MuscleGroups, 0)
+
+	for _, mg := range dbMGEXSlice {
+
+		convMG := MuscleGroups{
+			ID:          mg.MuscleGroup.ID,
+			BodyPart:    mg.MuscleGroup.BodyPart,
+			MuscleGroup: mg.MuscleGroup.MuscleGroup,
+			MuscleName:  mg.MuscleGroup.MuscleName,
+		}
+
+		convEXMG := ExerciseMuscleGroups{
+			ID:                   int(mg.ExerciseMuscleGroup.ID),
+			ExerciseID:           mg.ExerciseMuscleGroup.ExerciseID,
+			MuscleGroupID:        mg.ExerciseMuscleGroup.MuscleGroupsID,
+			PrimaryMuscleGroup:   NullBoolToBool(mg.ExerciseMuscleGroup.PrimaryMuscle),
+			SecondaryMuscleGroup: NullBoolToBool(mg.ExerciseMuscleGroup.SecondaryMuscle),
+			CreatedAt:            NullTimeToTime(mg.ExerciseMuscleGroup.CreatedAt),
+			ModifiedAt:           NullTimeToTime(mg.ExerciseMuscleGroup.ModifiedAt),
+		}
+
+		exMGMap[convEXMG] = convMG
+	}
+
+	exSlice := []Exercise{}
+
+	for _, e := range dbEXSlice {
+
+		convEx := Exercise{
+			ID:           e.ID,
+			Name:         e.Name,
+			ExerciseType: ExerciseType(e.ExerciseType),
+			Equipment:    e.Equipment,
+			Description:  NullStringToString(e.Description),
+			CreatedAt:    NullTimeToTime(e.CreatedAt),
+			ModifiedAt:   NullTimeToTime(e.ModifiedAt),
+		}
+
+		primMGSlice := []MuscleGroups{}
+		secMGSlice := []MuscleGroups{}
+
+		for ex, mg := range exMGMap {
+
+			if ex.ExerciseID == convEx.ID {
+
+				if ex.PrimaryMuscleGroup {
+					primMGSlice = append(primMGSlice, mg)
+					continue
+				}
+				if ex.SecondaryMuscleGroup {
+					secMGSlice = append(secMGSlice, mg)
+					continue
+				}
+			}
+		}
+		convEx.PrimaryMuscleGroups = primMGSlice
+		convEx.SecondaryMuscleGroups = secMGSlice
+
+		exSlice = append(exSlice, convEx)
+	}
+	return exSlice, nil
 }
 
 // func (es *ExerciseService) ConvertDBexerciseToExercise(e db.Exercise) Exercise {
