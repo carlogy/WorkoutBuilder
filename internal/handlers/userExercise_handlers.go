@@ -12,7 +12,8 @@ import (
 )
 
 type UserExerciseHandler struct {
-	conf *ApiConfig
+	exerciseService *services.ExerciseService
+	authService     *services.AuthService
 }
 
 type CreateUserExerciseParams struct {
@@ -25,8 +26,8 @@ type CreateUserExerciseParams struct {
 	Notes           *string                `json:"notes"`
 }
 
-func NewUserExerciseHanlder(ac *ApiConfig) UserExerciseHandler {
-	return UserExerciseHandler{conf: ac}
+func NewUserExerciseHanlder(es services.ExerciseService, as services.AuthService) UserExerciseHandler {
+	return UserExerciseHandler{exerciseService: &es, authService: &as}
 }
 
 func (ueh *UserExerciseHandler) writeJSONResponse(w http.ResponseWriter, data interface{}, statusCode int) {
@@ -91,177 +92,186 @@ func createUpdateUserExerciseParams(jsonParams CreateUserExerciseParams, recordI
 
 func (ueh *UserExerciseHandler) CreateUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
 
-	id, err := ueh.conf.GetUserIDFromToken(r.Header)
-	if err != nil {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// TO DO: Implement new userExercise that utilize full exercise tied to user
 
-	decoder := json.NewDecoder(r.Body)
+	// id, err := ueh..GetUserIDFromToken(r.Header)
+	// if err != nil {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	body := CreateUserExerciseParams{}
-	err = decoder.Decode(&body)
-	if err != nil {
-		http.Error(w, "Error decoding request body", http.StatusInternalServerError)
-		return
-	}
+	// decoder := json.NewDecoder(r.Body)
 
-	if id != body.UserID {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// body := CreateUserExerciseParams{}
+	// err = decoder.Decode(&body)
+	// if err != nil {
+	// 	http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	dbUE, err := createDBUserExerciseParams(body)
-	if err != nil {
-		http.Error(w, "Error creating entity", 500)
-		fmt.Println("Error creating userExercise params: ", err)
-		return
-	}
+	// if id != body.UserID {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	createdUE, err := ueh.conf.db.CreateUserExercise(r.Context(), dbUE)
-	if err != nil {
-		http.Error(w, "Error logging exercise", http.StatusInternalServerError)
-		fmt.Println("Error writing UserExercise to db ", err)
-		return
-	}
+	// dbUE, err := createDBUserExerciseParams(body)
+	// if err != nil {
+	// 	http.Error(w, "Error creating entity", 500)
+	// 	fmt.Println("Error creating userExercise params: ", err)
+	// 	return
+	// }
 
-	userExercise, err := services.ConvertDBUserExerciseToUserExercise(createdUE)
-	if err != nil {
-		http.Error(w, "Error encoding recorded exercise", http.StatusInternalServerError)
-	}
+	// createdUE, err := ueh.conf.db.CreateUserExercise(r.Context(), dbUE)
+	// if err != nil {
+	// 	http.Error(w, "Error logging exercise", http.StatusInternalServerError)
+	// 	fmt.Println("Error writing UserExercise to db ", err)
+	// 	return
+	// }
 
-	ueh.writeJSONResponse(w, userExercise, http.StatusCreated)
+	// userExercise, err := services.ConvertDBUserExerciseToUserExercise(createdUE)
+	// if err != nil {
+	// 	http.Error(w, "Error encoding recorded exercise", http.StatusInternalServerError)
+	// }
+
+	// ueh.writeJSONResponse(w, userExercise, http.StatusCreated)
 }
 
 func (ueh *UserExerciseHandler) GetUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
 
-	recordID := r.PathValue("id")
-	recordUUID, err := uuid.Parse(recordID)
-	if err != nil {
-		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
-		return
-	}
+	// TO DO: Implement new userExercise that utilize full exercise tied to user
 
-	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
-	if err != nil {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// recordID := r.PathValue("id")
+	// recordUUID, err := uuid.Parse(recordID)
+	// if err != nil {
+	// 	http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+	// 	return
+	// }
 
-	dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), recordUUID)
-	if err != nil {
-		http.Error(w, "Record Not found", http.StatusNotFound)
-		fmt.Println("Error getting record from db ", err)
-		return
-	}
+	// tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	// if err != nil {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	if dbRecord.Userid != tokenUserid {
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		fmt.Println("Error exerciseRecordUser and request token user don't match ", err)
-		return
-	}
+	// dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), recordUUID)
+	// if err != nil {
+	// 	http.Error(w, "Record Not found", http.StatusNotFound)
+	// 	fmt.Println("Error getting record from db ", err)
+	// 	return
+	// }
 
-	userExercise, err := services.ConvertDBUserExerciseToUserExercise(dbRecord)
-	if err != nil {
-		http.Error(w, "Error preparing json reponse ", http.StatusInternalServerError)
-		fmt.Println("Errorconverting db record for json response ", err)
-		return
-	}
+	// if dbRecord.Userid != tokenUserid {
+	// 	http.Error(w, "Unauthorized", http.StatusUnauthorized)
+	// 	fmt.Println("Error exerciseRecordUser and request token user don't match ", err)
+	// 	return
+	// }
 
-	ueh.writeJSONResponse(w, userExercise, http.StatusOK)
+	// userExercise, err := services.ConvertDBUserExerciseToUserExercise(dbRecord)
+	// if err != nil {
+	// 	http.Error(w, "Error preparing json reponse ", http.StatusInternalServerError)
+	// 	fmt.Println("Errorconverting db record for json response ", err)
+	// 	return
+	// }
+
+	// ueh.writeJSONResponse(w, userExercise, http.StatusOK)
 }
 
 func (ueh *UserExerciseHandler) UpdateUserExerciseHandler(w http.ResponseWriter, r *http.Request) {
 
-	recordID := r.PathValue("id")
-	uuidRecordID, err := uuid.Parse(recordID)
-	if err != nil {
-		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
-		return
-	}
+	// TO DO: Implement new userExercise that utilize full exercise tied to user
 
-	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
-	if err != nil {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// recordID := r.PathValue("id")
+	// uuidRecordID, err := uuid.Parse(recordID)
+	// if err != nil {
+	// 	http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+	// 	return
+	// }
 
-	decoder := json.NewDecoder(r.Body)
-	body := CreateUserExerciseParams{}
-	err = decoder.Decode(&body)
-	if err != nil {
-		http.Error(w, "Error decoding request body", http.StatusInternalServerError)
-		return
-	}
+	// tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	// if err != nil {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	if tokenUserid != body.UserID {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// decoder := json.NewDecoder(r.Body)
+	// body := CreateUserExerciseParams{}
+	// err = decoder.Decode(&body)
+	// if err != nil {
+	// 	http.Error(w, "Error decoding request body", http.StatusInternalServerError)
+	// 	return
+	// }
 
-	dbupdateParams, err := createUpdateUserExerciseParams(body, uuidRecordID)
-	if err != nil {
-		http.Error(w, "Error creating entity", 500)
-		fmt.Println("Error creating userExercise params: ", err)
-		return
-	}
+	// if tokenUserid != body.UserID {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	updatedUERecord, err := ueh.conf.db.UpdateUserExcerciseRecordById(r.Context(), dbupdateParams)
-	if err != nil {
-		http.Error(w, "Error updating record", http.StatusInternalServerError)
-		fmt.Println("Error updating record ", err)
-		return
-	}
+	// dbupdateParams, err := createUpdateUserExerciseParams(body, uuidRecordID)
+	// if err != nil {
+	// 	http.Error(w, "Error creating entity", 500)
+	// 	fmt.Println("Error creating userExercise params: ", err)
+	// 	return
+	// }
 
-	convertedUERecord, err := services.ConvertDBUserExerciseToUserExercise(updatedUERecord)
-	if err != nil {
-		http.Error(w, "error encoding response", http.StatusInternalServerError)
-		fmt.Println("Error converting db to response record: ", err)
-		return
-	}
+	// updatedUERecord, err := ueh.conf.db.UpdateUserExcerciseRecordById(r.Context(), dbupdateParams)
+	// if err != nil {
+	// 	http.Error(w, "Error updating record", http.StatusInternalServerError)
+	// 	fmt.Println("Error updating record ", err)
+	// 	return
+	// }
 
-	ueh.writeJSONResponse(w, convertedUERecord, http.StatusOK)
+	// convertedUERecord, err := services.ConvertDBUserExerciseToUserExercise(updatedUERecord)
+	// if err != nil {
+	// 	http.Error(w, "error encoding response", http.StatusInternalServerError)
+	// 	fmt.Println("Error converting db to response record: ", err)
+	// 	return
+	// }
+
+	// ueh.writeJSONResponse(w, convertedUERecord, http.StatusOK)
 }
 
 func (ueh *UserExerciseHandler) DeleteUserExerciseRecordById(w http.ResponseWriter, r *http.Request) {
-	recordID := r.PathValue("id")
-	uuidRecordID, err := uuid.Parse(recordID)
-	if err != nil {
-		http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
-		return
-	}
 
-	tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
-	if err != nil {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// TO DO: Implement new userExercise that utilize full exercise tied to user
 
-	dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), uuidRecordID)
-	if err != nil {
-		http.Error(w, "Error invalid recordID", http.StatusInternalServerError)
-		fmt.Println("Error querying for record in db: ", err)
-		return
-	}
+	// recordID := r.PathValue("id")
+	// uuidRecordID, err := uuid.Parse(recordID)
+	// if err != nil {
+	// 	http.Error(w, "Unauthorized uuid format", http.StatusNotFound)
+	// 	return
+	// }
 
-	if tokenUserid != dbRecord.Userid {
-		http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
-		return
-	}
+	// tokenUserid, err := ueh.conf.GetUserIDFromToken(r.Header)
+	// if err != nil {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	deletedRecord, err := ueh.conf.db.DeleteUserExerciseRecordById(r.Context(), uuidRecordID)
-	if err != nil {
-		http.Error(w, "Error deleting record", http.StatusInternalServerError)
-		fmt.Println("Error attempting to delete record: ", err)
-		return
-	}
+	// dbRecord, err := ueh.conf.db.GetUserExerciseRecordById(r.Context(), uuidRecordID)
+	// if err != nil {
+	// 	http.Error(w, "Error invalid recordID", http.StatusInternalServerError)
+	// 	fmt.Println("Error querying for record in db: ", err)
+	// 	return
+	// }
 
-	jsonReponseRecord, err := services.ConvertDBUserExerciseToUserExercise(deletedRecord)
-	if err != nil {
-		http.Error(w, "Error preparing jsonResponse", http.StatusInternalServerError)
-		fmt.Println("Error converting db record to jsonResponse: ", err)
-		return
-	}
+	// if tokenUserid != dbRecord.Userid {
+	// 	http.Error(w, "Error validation bearer token", http.StatusUnauthorized)
+	// 	return
+	// }
 
-	ueh.writeJSONResponse(w, jsonReponseRecord, http.StatusOK)
+	// deletedRecord, err := ueh.conf.db.DeleteUserExerciseRecordById(r.Context(), uuidRecordID)
+	// if err != nil {
+	// 	http.Error(w, "Error deleting record", http.StatusInternalServerError)
+	// 	fmt.Println("Error attempting to delete record: ", err)
+	// 	return
+	// }
+
+	// jsonReponseRecord, err := services.ConvertDBUserExerciseToUserExercise(deletedRecord)
+	// if err != nil {
+	// 	http.Error(w, "Error preparing jsonResponse", http.StatusInternalServerError)
+	// 	fmt.Println("Error converting db record to jsonResponse: ", err)
+	// 	return
+	// }
+
+	// ueh.writeJSONResponse(w, jsonReponseRecord, http.StatusOK)
 }
