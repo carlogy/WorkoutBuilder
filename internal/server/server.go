@@ -19,8 +19,8 @@ type Config struct {
 	Port      int
 	SecretKey string
 	DBURI     string
-	*database.Queries
-	db *sql.DB
+	Queries   *database.Queries
+	db        *sql.DB
 }
 
 type Server struct {
@@ -32,6 +32,10 @@ func NewConfig() *Config {
 	port, _ := strconv.Atoi(os.Getenv("PORT"))
 	secret := os.Getenv("JWTSECRET")
 	dbURI := os.Getenv("WORKOUTBUILDER_DB_URL")
+
+	if secret == "" {
+		log.Fatal("Secret must be set")
+	}
 
 	return &Config{
 		Port:      port,
@@ -57,7 +61,7 @@ func NewServer() *http.Server {
 	cfg.db = dbConn
 	cfg.Queries = dbQueries
 
-	apiCfg := handlers.NewApiConfig(cfg.Queries, cfg.SecretKey)
+	apiCfg := handlers.NewApiConfig(cfg.SecretKey, dbQueries)
 
 	NewServer := &Server{
 		Config:    cfg,

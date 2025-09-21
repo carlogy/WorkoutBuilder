@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/google/uuid"
+	id "github.com/google/uuid"
 )
 
 type TokenType string
@@ -17,7 +17,7 @@ const (
 	TokenTypeAccess TokenType = "workoutBuilder-access"
 )
 
-func MakeJWT(userId uuid.UUID, tokenSecret string) (string, error) {
+func MakeJWT(userId id.UUID, tokenSecret string) (string, error) {
 
 	signingKey := []byte(tokenSecret)
 
@@ -31,7 +31,7 @@ func MakeJWT(userId uuid.UUID, tokenSecret string) (string, error) {
 	return token.SignedString(signingKey)
 }
 
-func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
+func ValidateJWT(tokenString, tokenSecret string) (id.UUID, error) {
 
 	claims := jwt.RegisteredClaims{}
 
@@ -42,28 +42,28 @@ func ValidateJWT(tokenString, tokenSecret string) (uuid.UUID, error) {
 	)
 	if err != nil {
 		fmt.Println(err)
-		return uuid.Nil, err
+		return id.Nil, err
 	}
 
 	userIdString, err := token.Claims.GetSubject()
 	if err != nil {
-		return uuid.Nil, err
+		return id.Nil, err
 	}
 
 	issuer, err := token.Claims.GetIssuer()
 	if err != nil {
-		return uuid.Nil, err
+		return id.Nil, err
 	}
 	if issuer != string(TokenTypeAccess) {
-		return uuid.Nil, errors.New("invalid Issuer")
+		return id.Nil, errors.New("invalid Issuer")
 	}
 
-	id, err := uuid.Parse(userIdString)
+	uuID, err := id.Parse(userIdString)
 	if err != nil {
-		return uuid.Nil, fmt.Errorf("invalid user ID: %w", err)
+		return id.Nil, fmt.Errorf("invalid user ID: %w", err)
 	}
 
-	return id, nil
+	return uuID, nil
 }
 
 func GetBearerToken(headers http.Header) (string, error) {

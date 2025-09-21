@@ -19,7 +19,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 
 	uh := handlers.NewUserHandler(*services.NewUserService(*repositories.NewUserRepository(s.Config.Queries), s.SecretKey), *ah.AuthService)
 
-	ueh := handlers.NewUserExerciseHanlder(s.ApiConfig)
+	ueh := handlers.NewUserExerciseHanlder(*services.NewExerciseService(*repositories.NewExerciseRepository(s.Config.Queries, s.Config.db), s.SecretKey), *ah.AuthService)
 
 	wh := handlers.NewWorkoutHandler(*services.NewWorkoutService(repositories.NewWorkoutRepository(s.Config.Queries, s.Config.db), s.SecretKey), *ah.AuthService)
 

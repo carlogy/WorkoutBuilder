@@ -14,11 +14,8 @@ type ApiConfig struct {
 	secret string
 }
 
-func NewApiConfig(db *database.Queries, secret string) *ApiConfig {
-	return &ApiConfig{
-		db:     db,
-		secret: secret,
-	}
+func NewApiConfig(s string, db *database.Queries) *ApiConfig {
+	return &ApiConfig{secret: s, db: db}
 }
 
 func (ac *ApiConfig) ValidateJWTRequestHeader(next http.HandlerFunc) http.HandlerFunc {
