@@ -50,5 +50,6 @@ func NewPlanService(repo repositories.PlanRepository) *PlanService {
 }
 
 func (ps *PlanService) CreateNewPlan(ctx context.Context, jep PlanRequestParams) (Plan, error) {
+
 	return Plan{}, nil
 }
