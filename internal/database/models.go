@@ -8,7 +8,6 @@ import (
 	"database/sql"
 
 	"github.com/google/uuid"
-	"github.com/sqlc-dev/pqtype"
 )
 
 type Exercise struct {
@@ -53,6 +52,18 @@ type MuscleGroup struct {
 	ModifiedAt  sql.NullTime
 }
 
+type Plan struct {
+	ID              uuid.UUID
+	Name            string
+	Goal            string
+	Days            sql.NullInt32
+	Duration        sql.NullString
+	Description     sql.NullString
+	ExperienceLevel sql.NullString
+	CreatedAt       sql.NullTime
+	ModifiedAt      sql.NullTime
+}
+
 type RefreshToken struct {
 	Token     string
 	CreatedAt sql.NullTime
@@ -76,11 +87,7 @@ type UserExercise struct {
 	ID             uuid.UUID
 	Userid         uuid.UUID
 	Exerciseid     uuid.UUID
-	SetsWeight     pqtype.NullRawMessage
-	Rest           sql.NullInt64
-	Duration       sql.NullInt64
 	DeclineIncline sql.NullInt64
-	Notes          sql.NullString
 	CreatedAt      sql.NullTime
 	ModifiedAt     sql.NullTime
 }
