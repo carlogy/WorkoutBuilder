@@ -2,8 +2,10 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	db "github.com/carlogy/WorkoutBuilder/internal/database"
 	"github.com/carlogy/WorkoutBuilder/internal/repositories"
 	id "github.com/google/uuid"
 )
@@ -49,7 +51,28 @@ func NewPlanService(repo repositories.PlanRepository) *PlanService {
 	}
 }
 
+func (ps *PlanService) createDBPlanParams(jep PlanRequestParams) db.CreatePlanParams {
+
+	return db.CreatePlanParams{
+		Name:            jep.Name,
+		Goal:            jep.Goal,
+		Days:            NoneNullIntToNullInt32(&jep.Days),
+		Duration:        NoneNullToNullString(&jep.Duration),
+		Description:     NoneNullToNullString(&jep.Description),
+		ExperienceLevel: NoneNullToNullString((*string)(&jep.ExperienceLevel)),
+	}
+
+}
+
 func (ps *PlanService) CreateNewPlan(ctx context.Context, jep PlanRequestParams) (Plan, error) {
+
+	dbPlan, err := ps.planRepo.CreatePlan(ctx, ps.createDBPlanParams(jep))
+	if err != nil {
+		fmt.Println("Error creating plan from repo: ", err)
+		return Plan{}, err
+	}
+
+	fmt.Println(dbPlan)
 
 	return Plan{}, nil
 }
