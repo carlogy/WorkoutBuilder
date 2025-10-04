@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE plans (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id UUID DEFAULT uuidv7() PRIMARY KEY,
   name TEXT NOT NULL,
   goal TEXT NOT NULL,
   days int,

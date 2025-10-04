@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE users (
-    id UUID PRIMARY KEY,
+    id uuid DEFAULT uuidv7() PRIMARY KEY,
     first_name TEXT,
     last_name TEXT,
     email TEXT UNIQUE NOT NULL,

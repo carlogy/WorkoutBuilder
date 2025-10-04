@@ -1,6 +1,6 @@
 services:
   psql_wb:
-    image: postgres:17.5-alpine3.22
+    image: postgres:18-alpine3.22
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${WORKOUTBUILDER_DB_USERNAME}

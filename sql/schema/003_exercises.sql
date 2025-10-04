@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE exercises (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID Default uuidv7() PRIMARY KEY,
     name TEXT UNIQUE NOT NULL,
     exercise_type TEXT NOT NULL,
     equipment TEXT NOT NULL,

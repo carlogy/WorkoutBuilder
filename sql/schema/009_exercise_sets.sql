@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE exercise_sets (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID DEFAULT uuidv7() PRIMARY KEY,
     workout_exerciseID UUID NOT NULL,
     ordinal INTEGER NOT NULL,
     weight DECIMAL(10,2),

@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE workouts (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID DEFAULT uuidv7() PRIMARY KEY,
     Name TEXT NOT NULL,
     Description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),

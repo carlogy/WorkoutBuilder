@@ -1,6 +1,6 @@
 -- +goose Up
 CREATE TABLE workout_blocks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID DEFAULT uuidv7() PRIMARY KEY,
     ordinal INTEGER,
     workoutID UUID NOT NULL REFERENCES workouts(id) ON DELETE CASCADE,
     restSeconds_after_block INTEGER,
